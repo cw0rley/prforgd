@@ -17,8 +17,8 @@ export default function TabLayout() {
           paddingTop: 8,
           height: Platform.OS === 'ios' ? 85 : 65,
         },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: '#7FFF3B',
+        tabBarInactiveTintColor: '#4DA6FF',
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '700',

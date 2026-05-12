@@ -48,7 +48,9 @@ function pick<T>(arr: T[]): T {
 
 function getAvailableMovements(userEquipment: string[]): typeof movements {
   return movements.filter((m) => {
-    const required = movementEquipment[m.name] || [];
+    const required = movementEquipment[m.name];
+    if (required === undefined) return false; // unlisted = exclude
+    if (required.length === 0) return true; // no equipment needed (bodyweight)
     return required.every((e) => userEquipment.includes(e));
   });
 }

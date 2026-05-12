@@ -64,6 +64,7 @@ export const movementEquipment: Record<string, string[]> = {
   'Box Jump': ['box'],
   'Walking Lunge': [],
   'Pistol': [],
+  'Pistol (Single-Leg Squat)': [],
   'Double-Under': ['jump-rope'],
   'Wall Ball': ['wall-ball'],
   'Turkish Get-Up': ['kettlebell'],
