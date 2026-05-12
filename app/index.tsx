@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   TextInput,
@@ -65,32 +65,6 @@ export default function HomeScreen() {
     return null;
   }
 
-  function renderWod({ item }: { item: HeroWod }) {
-    const categoryColor = colors[item.category] || colors.primary;
-
-    return (
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => router.push(`/wod/${item.id}`)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.cardHeader}>
-          <Text style={styles.wodName}>{item.name}</Text>
-          <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
-            <Text style={styles.categoryText}>
-              {categoryLabels[item.category]}
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.wodType}>{item.type.replace(/-/g, ' ').toUpperCase()}</Text>
-        <Text style={styles.movements} numberOfLines={1}>
-          {item.movements.join(' | ')}
-        </Text>
-        {renderPR(item)}
-      </TouchableOpacity>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false, title: 'Home' }} />
@@ -112,13 +86,33 @@ export default function HomeScreen() {
         value={search}
         onChangeText={setSearch}
       />
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={renderWod}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={true}
-      />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.list}>
+        {filtered.map((item) => {
+          const categoryColor = colors[item.category] || colors.primary;
+          return (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.card}
+              onPress={() => router.push(`/wod/${item.id}`)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.cardHeader}>
+                <Text style={styles.wodName}>{item.name}</Text>
+                <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+                  <Text style={styles.categoryText}>
+                    {categoryLabels[item.category]}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.wodType}>{item.type.replace(/-/g, ' ').toUpperCase()}</Text>
+              <Text style={styles.movements} numberOfLines={1}>
+                {item.movements.join(' | ')}
+              </Text>
+              {renderPR(item)}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
@@ -161,6 +155,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+  },
+  scrollView: {
+    flex: 1,
   },
   list: {
     paddingBottom: spacing.xl,
