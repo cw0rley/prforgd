@@ -120,21 +120,6 @@ export default function WodDetailScreen() {
           </View>
         )}
 
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={styles.startButton}
-            onPress={() => router.push(`/log/${wod.id}?mode=timer`)}
-          >
-            <Text style={styles.startButtonText}>START</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.logButton}
-            onPress={() => router.push(`/log/${wod.id}?mode=log`)}
-          >
-            <Text style={styles.logButtonText}>LOG</Text>
-          </TouchableOpacity>
-        </View>
-
         {results.length > 0 && (
           <View style={styles.historySection}>
             <Text style={styles.historyTitle}>HISTORY</Text>
@@ -183,6 +168,20 @@ export default function WodDetailScreen() {
           </View>
         )}
       </ScrollView>
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={styles.startButton}
+          onPress={() => router.push(`/log/${wod.id}?mode=timer`)}
+        >
+          <Text style={styles.startButtonText}>START</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.logButton}
+          onPress={() => router.push(`/log/${wod.id}?mode=log`)}
+        >
+          <Text style={styles.logButtonText}>LOG</Text>
+        </TouchableOpacity>
+      </View>
     </>
   );
 }
@@ -194,7 +193,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingBottom: spacing.xl * 2,
+    paddingBottom: 120,
   },
   wodName: {
     fontSize: 36,
@@ -294,10 +293,18 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.xs,
   },
-  actionRow: {
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.lg,
+    padding: spacing.md,
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
   },
   startButton: {
     flex: 1,

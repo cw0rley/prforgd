@@ -252,41 +252,7 @@ export default function LogWorkoutScreen() {
               </Text>
             )}
 
-            <View style={styles.timerButtons}>
-              {!timerRunning && !isFinished && (
-                <TouchableOpacity style={styles.startBtn} onPress={startTimer}>
-                  <Text style={styles.startBtnText}>
-                    {timerStarted ? 'RESUME' : 'START'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {timerRunning && (
-                <TouchableOpacity style={styles.pauseBtn} onPress={pauseTimer}>
-                  <Text style={styles.pauseBtnText}>PAUSE</Text>
-                </TouchableOpacity>
-              )}
-
-              {timerRunning && hasRounds && !isFinished && (
-                <TouchableOpacity style={styles.lapBtn} onPress={lapRound}>
-                  <Text style={styles.lapBtnText}>
-                    {currentRound >= totalRounds ? 'FINISH' : `ROUND ${currentRound} DONE`}
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {timerRunning && (
-                <TouchableOpacity style={styles.stopBtn} onPress={stopTimer}>
-                  <Text style={styles.stopBtnText}>STOP</Text>
-                </TouchableOpacity>
-              )}
-
-              {timerStarted && !timerRunning && (
-                <TouchableOpacity style={styles.resetBtn} onPress={resetTimer}>
-                  <Text style={styles.resetBtnText}>RESET</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            {/* Timer buttons moved to bottom bar */}
 
             {roundTimes.length > 0 && (
               <View style={styles.roundsList}>
@@ -424,18 +390,70 @@ export default function LogWorkoutScreen() {
               />
             </View>
 
-            <TouchableOpacity
-              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-              onPress={handleSave}
-              disabled={saving}
-            >
-              <Text style={styles.saveButtonText}>
-                {saving ? 'SAVING...' : 'SAVE RESULT'}
-              </Text>
-            </TouchableOpacity>
           </>
         )}
       </ScrollView>
+
+      {/* Fixed bottom bar with all action buttons */}
+      <View style={styles.bottomBar}>
+        {isTimerMode && !isAmrap && (
+          <>
+            {!timerStarted && !isFinished && (
+              <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={startTimer}>
+                <Text style={styles.bottomBtnOutlineGreenText}>START</Text>
+              </TouchableOpacity>
+            )}
+
+            {timerStarted && !timerRunning && !isFinished && (
+              <TouchableOpacity style={styles.bottomBtnOutlineBlue} onPress={startTimer}>
+                <Text style={styles.bottomBtnOutlineBlueText}>RESUME</Text>
+              </TouchableOpacity>
+            )}
+
+            {timerRunning && (
+              <TouchableOpacity style={styles.bottomBtnOutlineYellow} onPress={pauseTimer}>
+                <Text style={styles.bottomBtnOutlineYellowText}>PAUSE</Text>
+              </TouchableOpacity>
+            )}
+
+            {timerRunning && hasRounds && !isFinished && (
+              <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={lapRound}>
+                <Text style={styles.bottomBtnOutlineGreenText}>
+                  {currentRound >= totalRounds ? 'FINISH' : `RD ${currentRound} DONE`}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {timerRunning && (
+              <TouchableOpacity style={styles.bottomBtnOutlineRed} onPress={stopTimer}>
+                <Text style={styles.bottomBtnOutlineRedText}>STOP</Text>
+              </TouchableOpacity>
+            )}
+
+            {timerStarted && !timerRunning && (
+              <TouchableOpacity style={styles.bottomBtnOutlineOrange} onPress={resetTimer}>
+                <Text style={styles.bottomBtnOutlineOrangeText}>RESET</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+
+        {showPostWorkout && (
+          <TouchableOpacity
+            style={[styles.bottomBtnPrimary, saving && { opacity: 0.5 }]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            <Text style={styles.bottomBtnPrimaryText}>
+              {saving ? 'SAVING...' : 'SAVE RESULT'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {!isTimerMode && !showPostWorkout && (
+          <View />
+        )}
+      </View>
     </>
   );
 }
@@ -447,7 +465,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingBottom: spacing.xl * 2,
+    paddingBottom: 120,
   },
   wodName: {
     fontSize: 28,
@@ -495,75 +513,131 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 
-  // Timer buttons
-  timerButtons: {
+  // Bottom bar
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    justifyContent: 'center',
     gap: spacing.sm,
-    marginTop: spacing.md,
-    flexWrap: 'wrap',
+    padding: spacing.md,
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
   },
-  startBtn: {
+  bottomBtnGreen: {
+    flex: 1,
     backgroundColor: colors.success,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
+    paddingVertical: 16,
     borderRadius: 12,
+    alignItems: 'center',
   },
-  startBtnText: {
-    color: colors.background,
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 2,
-  },
-  pauseBtn: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-  },
-  pauseBtnText: {
+  bottomBtnGreenText: {
     color: colors.background,
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 2,
   },
-  lapBtn: {
-    backgroundColor: '#002B12',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+  bottomBtnPrimary: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
     borderRadius: 12,
+    alignItems: 'center',
+  },
+  bottomBtnPrimaryText: {
+    color: colors.background,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
+  bottomBtnOutlineGreen: {
+    flex: 1,
+    backgroundColor: '#002B12',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.success,
   },
-  lapBtnText: {
+  bottomBtnOutlineGreenText: {
     color: colors.success,
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 1,
   },
-  stopBtn: {
-    backgroundColor: '#2B0012',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+  bottomBtnOutlineBlue: {
+    flex: 1,
+    backgroundColor: '#001A2B',
+    paddingVertical: 16,
     borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4DA6FF',
+  },
+  bottomBtnOutlineBlueText: {
+    color: '#4DA6FF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
+  bottomBtnOutlineOrange: {
+    flex: 1,
+    backgroundColor: '#2B1500',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FF8C00',
+  },
+  bottomBtnOutlineOrangeText: {
+    color: '#FF8C00',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
+  bottomBtnOutlineYellow: {
+    flex: 1,
+    backgroundColor: '#2B2200',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFD700',
+  },
+  bottomBtnOutlineYellowText: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
+  bottomBtnOutlineRed: {
+    flex: 1,
+    backgroundColor: '#2B0012',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.danger,
   },
-  stopBtnText: {
+  bottomBtnOutlineRedText: {
     color: colors.danger,
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 2,
   },
-  resetBtn: {
+  bottomBtnMuted: {
+    flex: 1,
     backgroundColor: colors.card,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingVertical: 16,
     borderRadius: 12,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  resetBtnText: {
+  bottomBtnMutedText: {
     color: colors.textSecondary,
     fontSize: 16,
     fontWeight: '800',
@@ -657,21 +731,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: spacing.xl,
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.background,
-    letterSpacing: 2,
   },
 });
