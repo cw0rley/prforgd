@@ -445,7 +445,7 @@ export default function LogWorkoutScreen() {
             disabled={saving}
           >
             <Text style={styles.bottomBtnPrimaryText}>
-              {saving ? 'SAVING...' : 'SAVE RESULT'}
+              {saving ? 'SAVING...' : 'SAVE'}
             </Text>
           </TouchableOpacity>
         )}
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingBottom: 120,
+    paddingBottom: 140,
   },
   wodName: {
     fontSize: 28,
@@ -521,8 +521,9 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     gap: spacing.sm,
-    padding: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: 40,
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.cardBorder,
@@ -536,7 +537,7 @@ const styles = StyleSheet.create({
   },
   bottomBtnGreenText: {
     color: colors.background,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: 2,
   },
@@ -549,7 +550,7 @@ const styles = StyleSheet.create({
   },
   bottomBtnPrimaryText: {
     color: colors.background,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: 2,
   },
@@ -564,7 +565,7 @@ const styles = StyleSheet.create({
   },
   bottomBtnOutlineGreenText: {
     color: colors.success,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: 1,
   },
@@ -579,7 +580,7 @@ const styles = StyleSheet.create({
   },
   bottomBtnOutlineBlueText: {
     color: '#4DA6FF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: 2,
   },
@@ -594,7 +595,7 @@ const styles = StyleSheet.create({
   },
   bottomBtnOutlineOrangeText: {
     color: '#FF8C00',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: 2,
   },
@@ -609,7 +610,7 @@ const styles = StyleSheet.create({
   },
   bottomBtnOutlineYellowText: {
     color: '#FFD700',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: 2,
   },
@@ -624,7 +625,7 @@ const styles = StyleSheet.create({
   },
   bottomBtnOutlineRedText: {
     color: colors.danger,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: 2,
   },
@@ -639,7 +640,7 @@ const styles = StyleSheet.create({
   },
   bottomBtnMutedText: {
     color: colors.textSecondary,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: 2,
   },
@@ -660,7 +661,7 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorder,
   },
   roundLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.text,
   },
@@ -716,7 +717,7 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   notesInput: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '400',
     textAlign: 'left',
     minHeight: 80,
