@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "hero-wod-tracker",
-    "slug": "hero-wod-tracker",
+    "name": "PRForgd",
+    "slug": "prforgd",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#001228"
     },
     "ios": {
       "supportsTablet": true
@@ -18,13 +18,24 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#001228"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "name": "PRForgd",
+      "shortName": "PRForgd",
+      "description": "Hero WOD tracker - track your times, PRs, and round splits",
+      "backgroundColor": "#001228",
+      "themeColor": "#001228"
+    },
+    "scheme": "prforgd",
+    "plugins": [
+      "expo-router",
+      "expo-web-browser"
+    ]
   }
 }
