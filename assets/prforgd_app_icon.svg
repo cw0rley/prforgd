@@ -1,0 +1,24 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#001228"/>
+
+  <!-- Corner tactical brackets -->
+  <g stroke="#7FFF3B" stroke-width="6" fill="none">
+    <polyline points="40,80 40,40 80,40"/>
+    <polyline points="432,40 472,40 472,80"/>
+    <polyline points="472,432 472,472 432,472"/>
+    <polyline points="80,472 40,472 40,432"/>
+  </g>
+
+  <!-- Stacked monogram: PR over FORGD -->
+  <g font-family="Impact, 'Arial Black', sans-serif" font-weight="900" text-anchor="middle">
+    <!-- PR large -->
+    <text x="256" y="245" font-size="200" fill="#7FFF3B" letter-spacing="4">PR</text>
+    <!-- Divider line -->
+    <line x1="120" y1="280" x2="392" y2="280" stroke="#FFFFFF" stroke-width="4"/>
+    <!-- FORGD below -->
+    <text x="256" y="370" font-size="80" fill="#FFFFFF" letter-spacing="8">FORGD</text>
+  </g>
+
+  <!-- Bottom accent bar -->
+  <rect x="156" y="410" width="200" height="6" fill="#7FFF3B"/>
+</svg>
