@@ -40,7 +40,7 @@ export const movements: Movement[] = [
   { id: 'push-up', name: 'Push-Up', videoUrl: 'https://www.youtube.com/watch?v=0pkjOk0EiAk', category: 'bodyweight' },
   { id: 'air-squat', name: 'Air Squat', videoUrl: 'https://youtu.be/rMvwVtlqjTE', category: 'bodyweight' },
   { id: 'burpee', name: 'Burpee', videoUrl: 'https://youtu.be/auBLPXO8Fww', category: 'bodyweight' },
-  { id: 'sit-up', name: 'Sit-Up', videoUrl: 'https://www.youtube.com/watch?v=1fbU_MkV7NE', category: 'bodyweight' },
+  { id: 'sit-up', name: 'Sit-Up', videoUrl: 'https://youtu.be/VIZX2Ru9qU8', category: 'bodyweight' },
   { id: 'ghd-sit-up', name: 'GHD Sit-Up', videoUrl: 'https://www.youtube.com/watch?v=1fbU_MkV7NE', category: 'bodyweight' },
   { id: 'back-extension', name: 'Back Extension', videoUrl: 'https://youtu.be/xMyFXMZ6Ch0', category: 'bodyweight' },
   { id: 'box-jump', name: 'Box Jump', videoUrl: 'https://youtu.be/NBY9-kTuHEk', category: 'bodyweight' },
