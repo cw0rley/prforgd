@@ -19,6 +19,7 @@ import { colors, spacing } from '../src/theme';
 
 export default function HistoryScreen() {
   const [results, setResults] = useState<WorkoutResult[]>([]);
+  const [filter, setFilter] = useState<'all' | 'pr'>('all');
   const router = useRouter();
 
   useFocusEffect(
@@ -64,11 +65,26 @@ export default function HistoryScreen() {
         <Text style={styles.title}>WORKOUT LOG</Text>
         <Text style={styles.subtitle}>{results.length} workouts logged</Text>
 
+        <View style={styles.filterRow}>
+          <TouchableOpacity
+            style={[styles.filterBtn, filter === 'all' && styles.filterBtnActive]}
+            onPress={() => setFilter('all')}
+          >
+            <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>ALL</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterBtn, filter === 'pr' && styles.filterBtnActive]}
+            onPress={() => setFilter('pr')}
+          >
+            <Text style={[styles.filterText, filter === 'pr' && styles.filterTextActive]}>PRs</Text>
+          </TouchableOpacity>
+        </View>
+
         {results.length === 0 && (
           <Text style={styles.empty}>No workouts logged yet. Get after it!</Text>
         )}
 
-        {results.map((r) => (
+        {results.filter((r) => filter === 'all' || r.isPR).map((r) => (
           <TouchableOpacity
             key={r.id}
             style={styles.card}
@@ -138,6 +154,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.xs,
     marginBottom: spacing.lg,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  filterBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  filterBtnActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  filterTextActive: {
+    color: colors.background,
   },
   empty: {
     fontSize: 16,

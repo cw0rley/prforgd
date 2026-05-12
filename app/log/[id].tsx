@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useKeepAwake } from 'expo-keep-awake';
 import { heroWods } from '../../src/data/heroWods';
 import {
   saveResult,
@@ -22,6 +23,7 @@ import {
 import { colors, spacing } from '../../src/theme';
 
 export default function LogWorkoutScreen() {
+  useKeepAwake();
   const { id, mode } = useLocalSearchParams<{ id: string; mode: string }>();
   const router = useRouter();
   const wod = heroWods.find((w) => w.id === id);
