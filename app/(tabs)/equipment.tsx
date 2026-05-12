@@ -7,10 +7,10 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
-import { allEquipment } from '../src/data/equipment';
-import { getUserEquipment, saveUserEquipment } from '../src/storage/equipmentStorage';
-import { colors, spacing } from '../src/theme';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { allEquipment } from '../../src/data/equipment';
+import { getUserEquipment, saveUserEquipment } from '../../src/storage/equipmentStorage';
+import { colors, spacing } from '../../src/theme';
 
 export default function EquipmentScreen() {
   const router = useRouter();
@@ -44,15 +44,6 @@ export default function EquipmentScreen() {
   }
 
   return (
-    <>
-      <Stack.Screen options={{
-        title: 'My Equipment',
-        headerLeft: () => (
-          <TouchableOpacity onPress={() => router.replace('/')}>
-            <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
-          </TouchableOpacity>
-        ),
-      }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>MY EQUIPMENT</Text>
         <Text style={styles.subtitle}>Select what you have access to. WODs will be filtered based on your equipment.</Text>
@@ -86,7 +77,6 @@ export default function EquipmentScreen() {
           );
         })}
       </ScrollView>
-    </>
   );
 }
 

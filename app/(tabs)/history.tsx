@@ -7,15 +7,15 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import { useFocusEffect, Stack, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   getResults,
   deleteResult,
   formatTime,
   WorkoutResult,
-} from '../src/storage/workoutStorage';
-import { heroWods } from '../src/data/heroWods';
-import { colors, spacing } from '../src/theme';
+} from '../../src/storage/workoutStorage';
+import { heroWods } from '../../src/data/heroWods';
+import { colors, spacing } from '../../src/theme';
 
 export default function HistoryScreen() {
   const [results, setResults] = useState<WorkoutResult[]>([]);
@@ -52,15 +52,6 @@ export default function HistoryScreen() {
   }
 
   return (
-    <>
-      <Stack.Screen options={{
-        title: 'Workout Log',
-        headerLeft: () => (
-          <TouchableOpacity onPress={() => router.replace('/')}>
-            <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
-          </TouchableOpacity>
-        ),
-      }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>WORKOUT LOG</Text>
         <Text style={styles.subtitle}>{results.length} workouts logged</Text>
@@ -128,7 +119,6 @@ export default function HistoryScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
-    </>
   );
 }
 
@@ -139,6 +129,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl * 2,
   },
   title: {

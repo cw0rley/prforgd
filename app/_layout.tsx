@@ -13,7 +13,9 @@ export default function RootLayout() {
           headerTitleStyle: { color: colors.text, fontWeight: 'bold' },
           contentStyle: { backgroundColor: colors.background },
         }}
-      />
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
     </>
   );
 }

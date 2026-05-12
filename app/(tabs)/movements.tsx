@@ -8,9 +8,9 @@ import {
   TextInput,
   Linking,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import { movements, Movement } from '../src/data/movements';
-import { colors, spacing } from '../src/theme';
+import { useRouter } from 'expo-router';
+import { movements, Movement } from '../../src/data/movements';
+import { colors, spacing } from '../../src/theme';
 
 const categoryLabels: Record<string, string> = {
   barbell: 'Barbell',
@@ -41,16 +41,8 @@ export default function MovementsScreen() {
   const categories = Object.keys(categoryLabels);
 
   return (
-    <>
-      <Stack.Screen options={{
-        title: 'Movements',
-        headerLeft: () => (
-          <TouchableOpacity onPress={() => router.replace('/')}>
-            <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
-          </TouchableOpacity>
-        ),
-      }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <Text style={styles.pageTitle}>MOVEMENTS</Text>
         <TextInput
           style={styles.searchInput}
           placeholder="Search movements..."
@@ -101,7 +93,6 @@ export default function MovementsScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
-    </>
   );
 }
 
@@ -112,7 +103,15 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl * 2,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: colors.primary,
+    letterSpacing: 3,
+    marginBottom: spacing.md,
   },
   searchInput: {
     backgroundColor: colors.card,

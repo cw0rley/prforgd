@@ -7,12 +7,12 @@ import {
   StyleSheet,
   TextInput,
 } from 'react-native';
-import { useRouter, useFocusEffect, Stack } from 'expo-router';
-import { heroWods, HeroWod } from '../src/data/heroWods';
-import { getPRForWod, formatTime, WorkoutResult } from '../src/storage/workoutStorage';
-import { getUserEquipment } from '../src/storage/equipmentStorage';
-import { canDoWod } from '../src/data/equipment';
-import { colors, spacing } from '../src/theme';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { heroWods, HeroWod } from '../../src/data/heroWods';
+import { getPRForWod, formatTime, WorkoutResult } from '../../src/storage/workoutStorage';
+import { getUserEquipment } from '../../src/storage/equipmentStorage';
+import { canDoWod } from '../../src/data/equipment';
+import { colors, spacing } from '../../src/theme';
 
 const categoryLabels: Record<string, string> = {
   army: 'Army',
@@ -75,20 +75,11 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false, title: 'Home' }} />
       <View style={styles.header}>
         <Text style={styles.title}>PRFORGD</Text>
-        <View style={styles.headerLinks}>
-          <TouchableOpacity onPress={() => router.push('/movements')}>
-            <Text style={styles.headerLink}>Moves</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/history')}>
-            <Text style={styles.headerLink}>Log</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/export')}>
-            <Text style={styles.headerLink}>Export</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={() => router.push('/export')}>
+          <Text style={styles.headerLink}>Export</Text>
+        </TouchableOpacity>
       </View>
       <TextInput
         style={styles.searchInput}
@@ -102,21 +93,15 @@ export default function HomeScreen() {
           style={[styles.filterBtn, filterByEquipment && styles.filterBtnActive]}
           onPress={() => {
             if (userEquipment.length === 0) {
-              router.push('/equipment');
+              router.push('/(tabs)/equipment');
             } else {
               setFilterByEquipment(!filterByEquipment);
             }
           }}
         >
           <Text style={[styles.filterText, filterByEquipment && styles.filterTextActive]}>
-            {filterByEquipment ? `MY GEAR (${filtered.length})` : 'MY GEAR'}
+            {filterByEquipment ? `FILTER: MY GEAR (${filtered.length})` : 'FILTER: MY GEAR'}
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.gearBtn}
-          onPress={() => router.push('/equipment')}
-        >
-          <Text style={styles.gearBtnText}>⚙</Text>
         </TouchableOpacity>
       </View>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.list}>
@@ -174,10 +159,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     letterSpacing: 4,
   },
-  headerLinks: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
   headerLink: {
     color: colors.primary,
     fontSize: 14,
@@ -219,14 +200,6 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: colors.background,
-  },
-  gearBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  gearBtnText: {
-    fontSize: 20,
-    color: colors.textSecondary,
   },
   scrollView: {
     flex: 1,
