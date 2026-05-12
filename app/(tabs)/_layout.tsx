@@ -43,6 +43,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="create"
+        options={{
+          title: 'Create',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>&#10010;</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="history"
         options={{
           title: 'Log',
