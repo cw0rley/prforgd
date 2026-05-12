@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect, Stack } from 'expo-router';
 import { heroWods } from '../../src/data/heroWods';
+import { findMovement } from '../../src/data/movements';
 import {
   getResultsForWod,
   getPRForWod,
@@ -79,6 +81,26 @@ export default function WodDetailScreen() {
 
         <View style={styles.workoutBox}>
           <Text style={styles.workoutText}>{wod.workout}</Text>
+        </View>
+
+        <View style={styles.movementsRow}>
+          {wod.movements.map((name, i) => {
+            const mov = findMovement(name);
+            return mov?.videoUrl ? (
+              <TouchableOpacity
+                key={i}
+                style={styles.movementChip}
+                onPress={() => Linking.openURL(mov.videoUrl)}
+              >
+                <Text style={styles.movementChipText}>{name}</Text>
+                <Text style={styles.movementPlay}>&#9654;</Text>
+              </TouchableOpacity>
+            ) : (
+              <View key={i} style={styles.movementChipDisabled}>
+                <Text style={styles.movementChipTextDisabled}>{name}</Text>
+              </View>
+            );
+          })}
         </View>
 
         {pr && (
@@ -206,6 +228,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     lineHeight: 26,
+  },
+  movementsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  movementChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    gap: 6,
+  },
+  movementChipText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  movementPlay: {
+    color: colors.primary,
+    fontSize: 10,
+  },
+  movementChipDisabled: {
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  movementChipTextDisabled: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
   },
   prBox: {
     backgroundColor: '#002B12',

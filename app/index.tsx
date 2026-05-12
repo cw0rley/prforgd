@@ -71,6 +71,9 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>PRFORGD</Text>
         <View style={styles.headerLinks}>
+          <TouchableOpacity onPress={() => router.push('/movements')}>
+            <Text style={styles.headerLink}>Moves</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/history')}>
             <Text style={styles.headerLink}>Log</Text>
           </TouchableOpacity>
