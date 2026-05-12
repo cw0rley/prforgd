@@ -10,6 +10,8 @@ import {
 import { useRouter, useFocusEffect, Stack } from 'expo-router';
 import { heroWods, HeroWod } from '../src/data/heroWods';
 import { getPRForWod, formatTime, WorkoutResult } from '../src/storage/workoutStorage';
+import { getUserEquipment } from '../src/storage/equipmentStorage';
+import { canDoWod } from '../src/data/equipment';
 import { colors, spacing } from '../src/theme';
 
 const categoryLabels: Record<string, string> = {
@@ -25,10 +27,13 @@ export default function HomeScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [prs, setPrs] = useState<Record<string, WorkoutResult | null>>({});
+  const [userEquipment, setUserEquipment] = useState<string[]>([]);
+  const [filterByEquipment, setFilterByEquipment] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       loadPRs();
+      getUserEquipment().then(setUserEquipment);
     }, [])
   );
 
@@ -40,11 +45,14 @@ export default function HomeScreen() {
     setPrs(prMap);
   }
 
-  const filtered = heroWods.filter(
-    (w) =>
+  const filtered = heroWods.filter((w) => {
+    const matchesSearch =
       w.name.toLowerCase().includes(search.toLowerCase()) ||
-      w.movements.some((m) => m.toLowerCase().includes(search.toLowerCase()))
-  );
+      w.movements.some((m) => m.toLowerCase().includes(search.toLowerCase()));
+    const matchesEquipment =
+      !filterByEquipment || canDoWod(w.movements, userEquipment);
+    return matchesSearch && matchesEquipment;
+  });
 
   function renderPR(wod: HeroWod) {
     const pr = prs[wod.id];
@@ -89,6 +97,28 @@ export default function HomeScreen() {
         value={search}
         onChangeText={setSearch}
       />
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          style={[styles.filterBtn, filterByEquipment && styles.filterBtnActive]}
+          onPress={() => {
+            if (userEquipment.length === 0) {
+              router.push('/equipment');
+            } else {
+              setFilterByEquipment(!filterByEquipment);
+            }
+          }}
+        >
+          <Text style={[styles.filterText, filterByEquipment && styles.filterTextActive]}>
+            {filterByEquipment ? `MY GEAR (${filtered.length})` : 'MY GEAR'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.gearBtn}
+          onPress={() => router.push('/equipment')}
+        >
+          <Text style={styles.gearBtnText}>⚙</Text>
+        </TouchableOpacity>
+      </View>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.list}>
         {filtered.map((item) => {
           const categoryColor = colors[item.category] || colors.primary;
@@ -115,6 +145,11 @@ export default function HomeScreen() {
             </TouchableOpacity>
           );
         })}
+        {filtered.length === 0 && (
+          <Text style={styles.emptyText}>
+            No WODs match your equipment. Tap ⚙ to update your gear.
+          </Text>
+        )}
       </ScrollView>
     </View>
   );
@@ -155,9 +190,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
     fontSize: 16,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    alignItems: 'center',
+  },
+  filterBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  filterBtnActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 1,
+  },
+  filterTextActive: {
+    color: colors.background,
+  },
+  gearBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  gearBtnText: {
+    fontSize: 20,
+    color: colors.textSecondary,
   },
   scrollView: {
     flex: 1,
@@ -211,5 +280,12 @@ const styles = StyleSheet.create({
     color: colors.prGold,
     fontWeight: '700',
     marginTop: spacing.xs,
+  },
+  emptyText: {
+    color: colors.textMuted,
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: spacing.xl,
+    lineHeight: 24,
   },
 });
