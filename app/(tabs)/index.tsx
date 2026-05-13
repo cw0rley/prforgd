@@ -11,6 +11,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { heroWods, HeroWod } from '../../src/data/heroWods';
 import { getPRForWod, formatTime, WorkoutResult } from '../../src/storage/workoutStorage';
 import { getUserEquipment } from '../../src/storage/equipmentStorage';
+import { getFavorites, toggleFavorite } from '../../src/storage/favoritesStorage';
 import { canDoWod } from '../../src/data/equipment';
 import { colors, spacing } from '../../src/theme';
 
@@ -23,17 +24,23 @@ const categoryLabels: Record<string, string> = {
   leo: 'LEO',
 };
 
+type SortOption = 'az' | 'branch' | 'type';
+
 export default function HomeScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [prs, setPrs] = useState<Record<string, WorkoutResult | null>>({});
   const [userEquipment, setUserEquipment] = useState<string[]>([]);
   const [filterByEquipment, setFilterByEquipment] = useState(false);
+  const [filterFavorites, setFilterFavorites] = useState(false);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [sort, setSort] = useState<SortOption>('az');
 
   useFocusEffect(
     useCallback(() => {
       loadPRs();
       getUserEquipment().then(setUserEquipment);
+      getFavorites().then(setFavorites);
     }, [])
   );
 
@@ -45,14 +52,30 @@ export default function HomeScreen() {
     setPrs(prMap);
   }
 
-  const filtered = heroWods.filter((w) => {
-    const matchesSearch =
-      w.name.toLowerCase().includes(search.toLowerCase()) ||
-      w.movements.some((m) => m.toLowerCase().includes(search.toLowerCase()));
-    const matchesEquipment =
-      !filterByEquipment || canDoWod(w.movements, userEquipment);
-    return matchesSearch && matchesEquipment;
-  });
+  async function handleToggleFavorite(wodId: string) {
+    const isFav = await toggleFavorite(wodId);
+    setFavorites((prev) =>
+      isFav ? [...prev, wodId] : prev.filter((id) => id !== wodId)
+    );
+  }
+
+  const filtered = heroWods
+    .filter((w) => {
+      const matchesSearch =
+        w.name.toLowerCase().includes(search.toLowerCase()) ||
+        w.movements.some((m) => m.toLowerCase().includes(search.toLowerCase()));
+      const matchesEquipment =
+        !filterByEquipment || canDoWod(w.movements, userEquipment);
+      const matchesFavorites =
+        !filterFavorites || favorites.includes(w.id);
+      return matchesSearch && matchesEquipment && matchesFavorites;
+    })
+    .sort((a, b) => {
+      if (sort === 'az') return a.name.localeCompare(b.name);
+      if (sort === 'branch') return a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
+      if (sort === 'type') return a.type.localeCompare(b.type) || a.name.localeCompare(b.name);
+      return 0;
+    });
 
   function renderPR(wod: HeroWod) {
     const pr = prs[wod.id];
@@ -93,6 +116,14 @@ export default function HomeScreen() {
       />
       <View style={styles.filterRow}>
         <TouchableOpacity
+          style={[styles.filterBtn, filterFavorites && styles.filterBtnActive]}
+          onPress={() => setFilterFavorites(!filterFavorites)}
+        >
+          <Text style={[styles.filterText, filterFavorites && styles.filterTextActive]}>
+            FAVS
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.filterBtn, filterByEquipment && styles.filterBtnActive]}
           onPress={() => {
             if (userEquipment.length === 0) {
@@ -103,13 +134,28 @@ export default function HomeScreen() {
           }}
         >
           <Text style={[styles.filterText, filterByEquipment && styles.filterTextActive]}>
-            {filterByEquipment ? `FILTER: MY GEAR (${filtered.length})` : 'FILTER: MY GEAR'}
+            MY GEAR
           </Text>
         </TouchableOpacity>
+        <View style={styles.sortGroup}>
+          {(['az', 'branch', 'type'] as SortOption[]).map((s) => (
+            <TouchableOpacity
+              key={s}
+              style={[styles.sortBtn, sort === s && styles.sortBtnActive]}
+              onPress={() => setSort(s)}
+            >
+              <Text style={[styles.sortText, sort === s && styles.sortTextActive]}>
+                {s === 'az' ? 'A-Z' : s === 'branch' ? 'Branch' : 'Type'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
+      <Text style={styles.countText}>{filtered.length} WODs</Text>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.list}>
         {filtered.map((item) => {
           const categoryColor = colors[item.category] || colors.primary;
+          const isFav = favorites.includes(item.id);
           return (
             <TouchableOpacity
               key={item.id}
@@ -119,10 +165,17 @@ export default function HomeScreen() {
             >
               <View style={styles.cardHeader}>
                 <Text style={styles.wodName}>{item.name}</Text>
-                <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
-                  <Text style={styles.categoryText}>
-                    {categoryLabels[item.category]}
-                  </Text>
+                <View style={styles.cardRight}>
+                  <TouchableOpacity onPress={() => handleToggleFavorite(item.id)}>
+                    <Text style={[styles.favStar, isFav && styles.favStarActive]}>
+                      {isFav ? '\u2605' : '\u2606'}
+                    </Text>
+                  </TouchableOpacity>
+                  <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+                    <Text style={styles.categoryText}>
+                      {categoryLabels[item.category]}
+                    </Text>
+                  </View>
                 </View>
               </View>
               <Text style={styles.wodType}>{item.type.replace(/-/g, ' ').toUpperCase()}</Text>
@@ -135,7 +188,7 @@ export default function HomeScreen() {
         })}
         {filtered.length === 0 && (
           <Text style={styles.emptyText}>
-            No WODs match your equipment. Tap ⚙ to update your gear.
+            No WODs match your filters.
           </Text>
         )}
       </ScrollView>
@@ -186,12 +239,13 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   filterBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.cardBorder,
@@ -201,13 +255,39 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   filterText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.textMuted,
     letterSpacing: 1,
   },
   filterTextActive: {
     color: colors.background,
+  },
+  sortGroup: {
+    flexDirection: 'row',
+    gap: 2,
+    marginLeft: 'auto',
+  },
+  sortBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  sortBtnActive: {
+    backgroundColor: colors.cardBorder,
+  },
+  sortText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  sortTextActive: {
+    color: colors.text,
+  },
+  countText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
   },
   scrollView: {
     flex: 1,
@@ -228,6 +308,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.xs,
+  },
+  cardRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  favStar: {
+    fontSize: 22,
+    color: colors.textMuted,
+  },
+  favStarActive: {
+    color: colors.primary,
   },
   wodName: {
     fontSize: 22,
