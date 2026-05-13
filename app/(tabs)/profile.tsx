@@ -12,6 +12,7 @@ import {
 import { useFocusEffect } from 'expo-router';
 import { Session } from '@supabase/supabase-js';
 import { signUp, signIn, signOut, getSession, onAuthChange } from '../../src/lib/auth';
+import { supabase } from '../../src/lib/supabase';
 import { fullSyncToCloud, fullSyncFromCloud } from '../../src/lib/sync';
 import { getResults } from '../../src/storage/workoutStorage';
 import { getFavorites } from '../../src/storage/favoritesStorage';
@@ -97,6 +98,22 @@ export default function ProfileScreen() {
     } catch (err: any) {
       showAlert('Error', err.message);
     }
+  }
+
+  async function handleSocialSignIn(provider: 'google' | 'facebook') {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: Platform.OS === 'web' ? window.location.origin : 'prforgd://auth/callback',
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      showAlert('Error', err.message);
+    }
+    setLoading(false);
   }
 
   async function handleSync() {
@@ -206,6 +223,21 @@ export default function ProfileScreen() {
           {loading ? 'LOADING...' : tab === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
         </Text>
       </TouchableOpacity>
+
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>OR</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <TouchableOpacity
+        style={styles.googleBtn}
+        onPress={() => handleSocialSignIn('google')}
+        disabled={loading}
+      >
+        <Text style={styles.googleBtnText}>CONTINUE WITH GOOGLE</Text>
+      </TouchableOpacity>
+
     </ScrollView>
   );
 }
@@ -269,6 +301,48 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.cardBorder,
+  },
+  dividerText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingHorizontal: spacing.md,
+  },
+  googleBtn: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  googleBtnText: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  facebookBtn: {
+    backgroundColor: '#1877F2',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  facebookBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   authBtn: {
     backgroundColor: colors.primary,
