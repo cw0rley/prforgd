@@ -76,7 +76,10 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>PRFORGD</Text>
+        <Text style={styles.title}>
+          <Text style={styles.titlePR}>PR</Text>
+          <Text style={styles.titleFORGD}>FORGD</Text>
+        </Text>
         <TouchableOpacity onPress={() => router.push('/export')}>
           <Text style={styles.headerLink}>Export</Text>
         </TouchableOpacity>
@@ -156,8 +159,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '900',
-    color: colors.primary,
     letterSpacing: 4,
+  },
+  titlePR: {
+    color: colors.primary,
+  },
+  titleFORGD: {
+    color: colors.text,
   },
   headerLink: {
     color: colors.primary,
