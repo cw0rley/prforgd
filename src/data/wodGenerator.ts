@@ -29,7 +29,7 @@ const repSchemes: Record<string, number[]> = {
 const cardioDistances: Record<string, string[]> = {
   Run: ['200m', '400m', '800m'],
   Row: ['250m', '500m', '1000m'],
-  Swim: ['100m', '200m'],
+  Swim: ['100m', '200m', '400m'],
 };
 
 const wodTypes: { type: GeneratedWodType; label: string }[] = [
@@ -49,6 +49,7 @@ function pick<T>(arr: T[]): T {
 
 function getAvailableMovements(userEquipment: string[]): typeof movements {
   return movements.filter((m) => {
+    if (!m.videoUrl) return false; // only use movements with videos
     const required = movementEquipment[m.name];
     if (required === undefined) return false; // unlisted = exclude
     if (required.length === 0) return true; // no equipment needed (bodyweight)

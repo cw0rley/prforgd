@@ -103,11 +103,12 @@ export default function ProfileScreen() {
   async function handleSocialSignIn(provider: 'google' | 'facebook') {
     setLoading(true);
     try {
+      const redirectTo = Platform.OS === 'web'
+        ? window.location.origin + '/(tabs)/profile'
+        : 'prforgd://auth/callback';
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: Platform.OS === 'web' ? window.location.origin : 'prforgd://auth/callback',
-        },
+        options: { redirectTo },
       });
       if (error) throw error;
     } catch (err: any) {
