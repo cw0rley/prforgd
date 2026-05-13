@@ -24,6 +24,17 @@ export interface WorkoutResult {
 
 const RESULTS_KEY = 'workout_results';
 
+// Helper to get current user id for cloud sync
+async function getUserId(): Promise<string | null> {
+  try {
+    const { supabase } = require('../lib/supabase');
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user?.id || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getResults(): Promise<WorkoutResult[]> {
   const data = await AsyncStorage.getItem(RESULTS_KEY);
   return data ? JSON.parse(data) : [];
@@ -33,6 +44,17 @@ export async function saveResult(result: WorkoutResult): Promise<void> {
   const results = await getResults();
   results.push(result);
   await AsyncStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+
+  // Auto-sync to cloud if logged in
+  const userId = await getUserId();
+  if (userId) {
+    try {
+      const { saveResultToCloud } = require('../lib/sync');
+      await saveResultToCloud(userId, result);
+    } catch (e) {
+      console.error('Cloud sync failed:', e);
+    }
+  }
 }
 
 export async function getResultsForWod(wodId: string): Promise<WorkoutResult[]> {
