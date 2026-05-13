@@ -14,6 +14,8 @@ export interface WorkoutResult {
   rounds?: number; // for AMRAPs
   reps?: number; // for AMRAPs (extra reps beyond full rounds)
   roundTimes?: RoundTime[]; // per-round split times
+  wodName?: string; // for custom WODs
+  wodDescription?: string; // for custom WODs (to replay)
   notes: string;
   completed: boolean; // finished the full workout?
   rx: boolean; // did it at prescribed weights/movements?

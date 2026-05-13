@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { saveGeneratedWod } from '../../src/storage/generatedWodStorage';
 import {
   getResults,
   deleteResult,
@@ -47,8 +48,24 @@ export default function HistoryScreen() {
     ]);
   }
 
-  function getWodName(wodId: string): string {
-    return heroWods.find((w) => w.id === wodId)?.name || wodId;
+  async function doAgain(r: WorkoutResult, mode: 'timer' | 'log') {
+    if (r.wodId.startsWith('custom-')) {
+      await saveGeneratedWod({
+        type: 'for-time',
+        description: r.wodDescription || r.wodName || 'Custom WOD',
+        movements: [],
+        name: r.wodName,
+      });
+      router.push(`/log/custom?mode=${mode}`);
+    } else {
+      router.push(`/log/${r.wodId}?mode=${mode}`);
+    }
+  }
+
+  function getWodName(r: WorkoutResult): string {
+    if (r.wodName) return r.wodName;
+    if (r.wodId.startsWith('custom-')) return 'Custom WOD';
+    return heroWods.find((w) => w.id === r.wodId)?.name || r.wodId;
   }
 
   return (
@@ -79,11 +96,11 @@ export default function HistoryScreen() {
           <TouchableOpacity
             key={r.id}
             style={styles.card}
-            onPress={() => router.push(`/wod/${r.wodId}`)}
+            onPress={() => doAgain(r, 'timer')}
             onLongPress={() => handleDelete(r.id)}
           >
             <View style={styles.cardHeader}>
-              <Text style={styles.wodName}>{getWodName(r.wodId)}</Text>
+              <Text style={styles.wodName}>{getWodName(r)}</Text>
               <Text style={styles.date}>
                 {new Date(r.date).toLocaleDateString()}
               </Text>
@@ -263,5 +280,36 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.sm,
     fontStyle: 'italic',
+  },
+  doAgainRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  doAgainBtn: {
+    backgroundColor: colors.success,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  doAgainText: {
+    color: colors.background,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  doAgainBtnLog: {
+    backgroundColor: colors.card,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  doAgainTextLog: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
 });

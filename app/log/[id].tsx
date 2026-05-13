@@ -13,6 +13,7 @@ import {
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { heroWods } from '../../src/data/heroWods';
+import { getGeneratedWod } from '../../src/storage/generatedWodStorage';
 import {
   saveResult,
   getPRForWod,
@@ -26,12 +27,40 @@ export default function LogWorkoutScreen() {
   useKeepAwake();
   const { id, mode } = useLocalSearchParams<{ id: string; mode: string }>();
   const router = useRouter();
-  const wod = heroWods.find((w) => w.id === id);
+  const isCustom = id === 'custom';
+
+  const heroWod = !isCustom ? heroWods.find((w) => w.id === id) : null;
+
+  const [customWod, setCustomWod] = useState<{
+    name: string;
+    workout: string;
+    type: string;
+    totalRounds?: number;
+    timeCap?: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (isCustom) {
+      getGeneratedWod().then((gw) => {
+        if (gw) {
+          setCustomWod({
+            name: gw.name || 'Custom WOD',
+            workout: gw.description,
+            type: gw.type,
+            totalRounds: gw.totalRounds,
+            timeCap: gw.timeCap,
+          });
+        }
+      });
+    }
+  }, [isCustom]);
+
+  const wod = heroWod || customWod;
 
   const isTimerMode = mode === 'timer';
   const isAmrap = wod?.type === 'amrap';
   const hasRounds = wod?.type === 'rounds-for-time';
-  const totalRounds = wod?.totalRounds || 0;
+  const totalRounds = (heroWod?.totalRounds || customWod?.totalRounds) || 0;
 
   // Timer state
   const [timerRunning, setTimerRunning] = useState(false);
@@ -157,10 +186,10 @@ export default function LogWorkoutScreen() {
 
     setSaving(true);
 
-    const currentPR = await getPRForWod(wod!.id);
+    const currentPR = isCustom ? null : await getPRForWod(heroWod!.id);
     let isPR = false;
 
-    if (rx) {
+    if (rx && !isCustom) {
       if (!currentPR) {
         isPR = true;
       } else if (timeSeconds !== undefined && currentPR.timeSeconds !== undefined) {
@@ -176,7 +205,9 @@ export default function LogWorkoutScreen() {
 
     const result: WorkoutResult = {
       id: Date.now().toString(),
-      wodId: wod!.id,
+      wodId: isCustom ? 'custom-' + Date.now() : (heroWod?.id || 'custom'),
+      wodName: isCustom ? (customWod?.name || 'Custom WOD') : undefined,
+      wodDescription: isCustom ? customWod?.workout : undefined,
       date: workoutDate,
       timeSeconds,
       rounds: roundsNum,
@@ -198,7 +229,11 @@ export default function LogWorkoutScreen() {
         Alert.alert('NEW PR!', 'Congratulations! You set a new personal record!');
       }
     }
-    router.replace(`/wod/${wod!.id}`);
+    if (isCustom) {
+      router.replace('/(tabs)/history');
+    } else {
+      router.replace(`/wod/${heroWod!.id}`);
+    }
   }
 
   function formatTimeFull(totalSec: number): string {
@@ -229,7 +264,7 @@ export default function LogWorkoutScreen() {
       <Stack.Screen options={{
         title: isTimerMode ? wod.name : `Log ${wod.name}`,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.replace(`/wod/${wod.id}`)}>
+          <TouchableOpacity onPress={() => isCustom ? router.replace('/(tabs)/create') : router.replace(`/wod/${heroWod?.id}`)}>
             <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
           </TouchableOpacity>
         ),

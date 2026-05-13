@@ -9,6 +9,7 @@ export interface GeneratedWod {
   totalRounds?: number;
   movements: { name: string; reps: number; weight?: string }[];
   description: string;
+  name?: string;
 }
 
 export interface WarmupRoutine {

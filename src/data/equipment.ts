@@ -18,6 +18,7 @@ export const allEquipment: Equipment[] = [
   { id: 'jump-rope', name: 'Jump Rope', icon: '〰️' },
   { id: 'bench', name: 'Bench', icon: '🛋️' },
   { id: 'run-space', name: 'Running Space', icon: '🏃' },
+  { id: 'pool', name: 'Pool', icon: '🏊' },
 ];
 
 // Map each movement to the equipment it requires
@@ -83,7 +84,7 @@ export const movementEquipment: Record<string, string[]> = {
   // Cardio
   'Run': ['run-space'],
   'Row': ['rower'],
-  'Swim': [],
+  'Swim': ['pool'],
 };
 
 // Get all equipment needed for a WOD
