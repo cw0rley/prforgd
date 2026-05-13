@@ -18,6 +18,7 @@ import { colors, spacing } from '../../src/theme';
 const categoryLabels: Record<string, string> = {
   army: 'Army',
   navy: 'Navy',
+  benchmark: 'Benchmark',
   marines: 'Marines',
   'air-force': 'Air Force',
   firefighter: 'Fire',
@@ -35,6 +36,7 @@ export default function HomeScreen() {
   const [filterFavorites, setFilterFavorites] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOption>('az');
+  const [groupFilter, setGroupFilter] = useState<'all' | 'hero' | 'girl' | 'benchmark'>('all');
 
   useFocusEffect(
     useCallback(() => {
@@ -68,7 +70,9 @@ export default function HomeScreen() {
         !filterByEquipment || canDoWod(w.movements, userEquipment);
       const matchesFavorites =
         !filterFavorites || favorites.includes(w.id);
-      return matchesSearch && matchesEquipment && matchesFavorites;
+      const matchesGroup =
+        groupFilter === 'all' || (w.group || 'hero') === groupFilter;
+      return matchesSearch && matchesEquipment && matchesFavorites && matchesGroup;
     })
     .sort((a, b) => {
       if (sort === 'az') return a.name.localeCompare(b.name);
@@ -150,6 +154,19 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+      </View>
+      <View style={styles.groupRow}>
+        {(['all', 'hero', 'girl', 'benchmark'] as const).map((g) => (
+          <TouchableOpacity
+            key={g}
+            style={[styles.sortBtn, groupFilter === g && styles.sortBtnActive]}
+            onPress={() => setGroupFilter(g)}
+          >
+            <Text style={[styles.sortText, groupFilter === g && styles.sortTextActive]}>
+              {g === 'all' ? 'All' : g === 'hero' ? 'Hero' : g === 'girl' ? 'Girl' : 'Benchmark'}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
       <Text style={styles.countText}>{filtered.length} WODs</Text>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.list}>
@@ -283,6 +300,11 @@ const styles = StyleSheet.create({
   },
   sortTextActive: {
     color: colors.text,
+  },
+  groupRow: {
+    flexDirection: 'row',
+    gap: 2,
+    marginBottom: spacing.sm,
   },
   countText: {
     fontSize: 12,

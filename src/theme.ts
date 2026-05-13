@@ -16,6 +16,7 @@ export const colors = {
   'air-force': '#00308F',
   firefighter: '#FF4500',
   leo: '#003366',
+  benchmark: '#8B4513',
 };
 
 export const spacing = {
