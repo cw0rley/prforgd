@@ -1,8 +1,12 @@
 import { Tabs } from 'expo-router';
-import { Text, Platform } from 'react-native';
+import { Text, Platform, useWindowDimensions } from 'react-native';
 import { colors } from '../../src/theme';
 
 export default function TabLayout() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width > 768;
+  const iconSize = isDesktop ? 28 : 24;
+
   return (
     <Tabs
       screenOptions={{
@@ -13,14 +17,14 @@ export default function TabLayout() {
           backgroundColor: colors.background,
           borderTopColor: colors.cardBorder,
           borderTopWidth: 1,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-          paddingTop: 8,
-          height: Platform.OS === 'ios' ? 85 : 65,
+          paddingBottom: Platform.OS === 'ios' ? 24 : isDesktop ? 12 : 8,
+          paddingTop: isDesktop ? 12 : 8,
+          height: Platform.OS === 'ios' ? 90 : isDesktop ? 75 : 65,
         },
-        tabBarActiveTintColor: '#7FFF3B',
-        tabBarInactiveTintColor: '#4DA6FF',
+        tabBarActiveTintColor: colors.text,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: isDesktop ? 12 : 11,
           fontWeight: '700',
           letterSpacing: 0.5,
         },
@@ -31,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: 'WODs',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>&#9776;</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9776;</Text>,
         }}
       />
       <Tabs.Screen
@@ -39,7 +43,7 @@ export default function TabLayout() {
         options={{
           title: 'Moves',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>&#9654;</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9654;</Text>,
         }}
       />
       <Tabs.Screen
@@ -47,7 +51,7 @@ export default function TabLayout() {
         options={{
           title: 'Create',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>&#10010;</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#10010;</Text>,
         }}
       />
       <Tabs.Screen
@@ -55,7 +59,7 @@ export default function TabLayout() {
         options={{
           title: 'Log',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>&#9201;</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9201;</Text>,
         }}
       />
       <Tabs.Screen
@@ -63,7 +67,7 @@ export default function TabLayout() {
         options={{
           title: 'Gear',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>&#9881;</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9881;</Text>,
         }}
       />
       <Tabs.Screen
@@ -71,7 +75,7 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>&#9787;</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9787;</Text>,
         }}
       />
     </Tabs>

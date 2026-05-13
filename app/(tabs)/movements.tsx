@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInput,
-  Linking,
+  Modal,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { movements, Movement } from '../../src/data/movements';
@@ -21,26 +22,37 @@ const categoryLabels: Record<string, string> = {
   other: 'Other',
 };
 
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([^&?/]+)/);
+  return match ? match[1] : null;
+}
+
 export default function MovementsScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeVideo, setActiveVideo] = useState<{ name: string; videoId: string } | null>(null);
 
-  const filtered = movements.filter((m) => {
-    const matchesSearch = !search || m.name.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = !activeCategory || m.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filtered = movements
+    .filter((m) => {
+      const matchesSearch = !search || m.name.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = !activeCategory || m.category === activeCategory;
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   function openVideo(m: Movement) {
-    if (m.videoUrl) {
-      Linking.openURL(m.videoUrl);
+    if (!m.videoUrl) return;
+    const videoId = getYouTubeId(m.videoUrl);
+    if (videoId) {
+      setActiveVideo({ name: m.name, videoId });
     }
   }
 
   const categories = Object.keys(categoryLabels);
 
   return (
+    <>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.pageTitle}>MOVEMENTS</Text>
         <TextInput
@@ -71,6 +83,8 @@ export default function MovementsScreen() {
           ))}
         </ScrollView>
 
+        <Text style={styles.countText}>{filtered.length} movements</Text>
+
         {filtered.map((m) => (
           <TouchableOpacity
             key={m.id}
@@ -80,7 +94,7 @@ export default function MovementsScreen() {
             activeOpacity={m.videoUrl ? 0.7 : 1}
           >
             <View style={styles.cardRow}>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.movementName}>{m.name}</Text>
                 <Text style={styles.movementCategory}>{categoryLabels[m.category]}</Text>
               </View>
@@ -93,6 +107,42 @@ export default function MovementsScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {/* Video Modal */}
+      <Modal
+        visible={!!activeVideo}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setActiveVideo(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{activeVideo?.name}</Text>
+              <TouchableOpacity onPress={() => setActiveVideo(null)}>
+                <Text style={styles.modalClose}>&#10005;</Text>
+              </TouchableOpacity>
+            </View>
+            {activeVideo && Platform.OS === 'web' && (
+              <iframe
+                src={`https://www.youtube.com/embed/${activeVideo.videoId}?autoplay=1&rel=0`}
+                style={{ width: '100%', height: 300, border: 'none', borderRadius: 8 } as any}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+              />
+            )}
+            {activeVideo && Platform.OS !== 'web' && (
+              <Text style={styles.mobileVideoHint}>
+                Video playback opens in browser on mobile.
+              </Text>
+            )}
+            <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setActiveVideo(null)}>
+              <Text style={styles.modalDoneBtnText}>CLOSE</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -125,7 +175,7 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorder,
   },
   categoryScroll: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     flexGrow: 0,
   },
   categoryBtn: {
@@ -148,6 +198,11 @@ const styles = StyleSheet.create({
   categoryTextActive: {
     color: colors.background,
   },
+  countText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
   card: {
     backgroundColor: colors.card,
     borderRadius: 10,
@@ -162,7 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   movementName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
   },
@@ -178,5 +233,56 @@ const styles = StyleSheet.create({
   noVideo: {
     fontSize: 16,
     color: colors.textMuted,
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    padding: spacing.md,
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: spacing.lg,
+    maxWidth: 600,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.text,
+    flex: 1,
+  },
+  modalClose: {
+    fontSize: 24,
+    color: colors.textMuted,
+    paddingLeft: spacing.md,
+  },
+  mobileVideoHint: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+    marginVertical: spacing.lg,
+  },
+  modalDoneBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  modalDoneBtnText: {
+    color: colors.background,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 2,
   },
 });

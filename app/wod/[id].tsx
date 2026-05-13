@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Linking,
+  Modal,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect, Stack } from 'expo-router';
 import { heroWods } from '../../src/data/heroWods';
@@ -26,6 +27,7 @@ export default function WodDetailScreen() {
   const wod = heroWods.find((w) => w.id === id);
   const [results, setResults] = useState<WorkoutResult[]>([]);
   const [pr, setPr] = useState<WorkoutResult | null>(null);
+  const [activeVideo, setActiveVideo] = useState<{ name: string; videoId: string } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -86,11 +88,12 @@ export default function WodDetailScreen() {
         <View style={styles.movementsRow}>
           {wod.movements.map((name, i) => {
             const mov = findMovement(name);
-            return mov?.videoUrl ? (
+            const videoId = mov?.videoUrl?.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&?/]+)/)?.[1];
+            return mov?.videoUrl && videoId ? (
               <TouchableOpacity
                 key={i}
                 style={styles.movementChip}
-                onPress={() => Linking.openURL(mov.videoUrl)}
+                onPress={() => setActiveVideo({ name, videoId })}
               >
                 <Text style={styles.movementChipText}>{name}</Text>
                 <Text style={styles.movementPlay}>&#9654;</Text>
@@ -182,6 +185,36 @@ export default function WodDetailScreen() {
           <Text style={styles.logButtonText}>LOG</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Video Modal */}
+      <Modal
+        visible={!!activeVideo}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setActiveVideo(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{activeVideo?.name}</Text>
+              <TouchableOpacity onPress={() => setActiveVideo(null)}>
+                <Text style={styles.modalClose}>&#10005;</Text>
+              </TouchableOpacity>
+            </View>
+            {activeVideo && Platform.OS === 'web' && (
+              <iframe
+                src={`https://www.youtube.com/embed/${activeVideo.videoId}?autoplay=1&rel=0`}
+                style={{ width: '100%', height: 300, border: 'none', borderRadius: 8 } as any}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+              />
+            )}
+            <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setActiveVideo(null)}>
+              <Text style={styles.modalDoneBtnText}>CLOSE</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -425,5 +458,49 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: 'center',
     marginTop: 100,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    padding: spacing.md,
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: spacing.lg,
+    maxWidth: 600,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.text,
+    flex: 1,
+  },
+  modalClose: {
+    fontSize: 24,
+    color: colors.textMuted,
+    paddingLeft: spacing.md,
+  },
+  modalDoneBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  modalDoneBtnText: {
+    color: colors.background,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 2,
   },
 });

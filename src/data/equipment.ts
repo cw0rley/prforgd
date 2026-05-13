@@ -49,6 +49,7 @@ export const movementEquipment: Record<string, string[]> = {
   'Chest-to-Bar Pull-Up': ['pullup-bar'],
   'Muscle-Up': ['rings'],
   'Ring Dip': ['rings'],
+  'Ring Row': ['rings'],
   'Handstand Push-Up': [],
   'Rope Climb': ['rope'],
   'Knees-to-Elbows': ['pullup-bar'],
