@@ -273,9 +273,9 @@ const styles = StyleSheet.create({
   },
   chipDivider: {
     width: 1,
-    backgroundColor: colors.text,
-    marginHorizontal: 6,
-    marginVertical: 4,
+    backgroundColor: colors.textSecondary,
+    marginHorizontal: 8,
+    marginVertical: 2,
   },
   countText: {
     fontSize: 12,
