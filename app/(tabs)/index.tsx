@@ -118,52 +118,50 @@ export default function HomeScreen() {
         value={search}
         onChangeText={setSearch}
       />
-      <View style={styles.filterSortRow}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+        <TouchableOpacity
+          style={[styles.chip, filterFavorites && styles.chipActive]}
+          onPress={() => setFilterFavorites(!filterFavorites)}
+        >
+          <Text style={[styles.chipText, filterFavorites && styles.chipTextActive]}>FAVS</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.chip, filterByEquipment && styles.chipActive]}
+          onPress={() => {
+            if (userEquipment.length === 0) {
+              router.push('/(tabs)/equipment');
+            } else {
+              setFilterByEquipment(!filterByEquipment);
+            }
+          }}
+        >
+          <Text style={[styles.chipText, filterByEquipment && styles.chipTextActive]}>MY GEAR</Text>
+        </TouchableOpacity>
+        <View style={styles.chipDivider} />
+        {(['all', 'hero', 'girl', 'benchmark'] as const).map((g) => (
           <TouchableOpacity
-            style={[styles.chip, filterFavorites && styles.chipActive]}
-            onPress={() => setFilterFavorites(!filterFavorites)}
+            key={g}
+            style={[styles.chip, groupFilter === g && styles.chipActive]}
+            onPress={() => setGroupFilter(g)}
           >
-            <Text style={[styles.chipText, filterFavorites && styles.chipTextActive]}>FAVS</Text>
+            <Text style={[styles.chipText, groupFilter === g && styles.chipTextActive]}>
+              {g === 'all' ? 'All' : g === 'hero' ? 'Hero' : g === 'girl' ? 'Girl' : 'WOD'}
+            </Text>
           </TouchableOpacity>
+        ))}
+        <View style={styles.chipDivider} />
+        {(['az', 'branch', 'type'] as SortOption[]).map((s) => (
           <TouchableOpacity
-            style={[styles.chip, filterByEquipment && styles.chipActive]}
-            onPress={() => {
-              if (userEquipment.length === 0) {
-                router.push('/(tabs)/equipment');
-              } else {
-                setFilterByEquipment(!filterByEquipment);
-              }
-            }}
+            key={s}
+            style={[styles.chip, sort === s && styles.chipActive]}
+            onPress={() => setSort(s)}
           >
-            <Text style={[styles.chipText, filterByEquipment && styles.chipTextActive]}>MY GEAR</Text>
+            <Text style={[styles.chipText, sort === s && styles.chipTextActive]}>
+              {s === 'az' ? 'A-Z' : s === 'branch' ? 'Branch' : 'Type'}
+            </Text>
           </TouchableOpacity>
-          {(['all', 'hero', 'girl', 'benchmark'] as const).map((g) => (
-            <TouchableOpacity
-              key={g}
-              style={[styles.chip, groupFilter === g && styles.chipActive]}
-              onPress={() => setGroupFilter(g)}
-            >
-              <Text style={[styles.chipText, groupFilter === g && styles.chipTextActive]}>
-                {g === 'all' ? 'All' : g === 'hero' ? 'Hero' : g === 'girl' ? 'Girl' : 'WOD'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        <View style={styles.sortGroup}>
-          {(['az', 'branch', 'type'] as SortOption[]).map((s) => (
-            <TouchableOpacity
-              key={s}
-              style={[styles.sortBtn, sort === s && styles.sortBtnActive]}
-              onPress={() => setSort(s)}
-            >
-              <Text style={[styles.sortText, sort === s && styles.sortTextActive]}>
-                {s === 'az' ? 'A-Z' : s === 'branch' ? 'Branch' : 'Type'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+        ))}
+      </ScrollView>
       <Text style={styles.countText}>{filtered.length} WODs</Text>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.list}>
         {filtered.map((item) => {
@@ -249,14 +247,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  filterSortRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
   chipScroll: {
-    flex: 1,
-    flexGrow: 1,
+    flexGrow: 0,
+    marginBottom: spacing.sm,
   },
   chip: {
     paddingVertical: 5,
@@ -278,29 +271,11 @@ const styles = StyleSheet.create({
   chipTextActive: {
     color: colors.background,
   },
-  sortGroup: {
-    flexDirection: 'row',
-    gap: 2,
-    paddingLeft: 6,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.cardBorder,
-    marginLeft: 4,
-  },
-  sortBtn: {
-    paddingVertical: 5,
-    paddingHorizontal: 6,
-    borderRadius: 6,
-  },
-  sortBtnActive: {
+  chipDivider: {
+    width: 1,
     backgroundColor: colors.cardBorder,
-  },
-  sortText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
-  sortTextActive: {
-    color: colors.text,
+    marginHorizontal: 3,
+    marginVertical: 4,
   },
   countText: {
     fontSize: 12,
