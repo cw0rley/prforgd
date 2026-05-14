@@ -1,12 +1,13 @@
 import { Tabs } from 'expo-router';
-import { Text, Platform, useWindowDimensions } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/theme';
 
 export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isDesktop = width > 768;
-  const iconSize = isDesktop ? 28 : 22;
-  const labelSize = isDesktop ? 14 : 11;
+  const iconSize = isDesktop ? 26 : 22;
+  const labelSize = isDesktop ? 14 : 10;
 
   return (
     <Tabs
@@ -19,8 +20,8 @@ export default function TabLayout() {
           borderTopColor: colors.cardBorder,
           borderTopWidth: 1,
           paddingBottom: Platform.OS === 'ios' ? 24 : isDesktop ? 12 : 8,
-          paddingTop: isDesktop ? 12 : 8,
-          height: Platform.OS === 'ios' ? 90 : isDesktop ? 75 : 65,
+          paddingTop: isDesktop ? 10 : 6,
+          height: Platform.OS === 'ios' ? 85 : isDesktop ? 70 : 58,
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
@@ -36,7 +37,7 @@ export default function TabLayout() {
         options={{
           title: 'WODs',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9776;</Text>,
+          tabBarIcon: ({ color, size }) => <Ionicons name="barbell-outline" size={iconSize} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -44,7 +45,7 @@ export default function TabLayout() {
         options={{
           title: 'Create',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#10010;</Text>,
+          tabBarIcon: ({ color, size }) => <Ionicons name="add-circle-outline" size={iconSize} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -52,7 +53,7 @@ export default function TabLayout() {
         options={{
           title: 'Log',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9201;</Text>,
+          tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" size={iconSize} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -60,7 +61,7 @@ export default function TabLayout() {
         options={{
           title: 'Gear',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9881;</Text>,
+          tabBarIcon: ({ color, size }) => <Ionicons name="build-outline" size={iconSize} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -68,15 +69,15 @@ export default function TabLayout() {
         options={{
           title: 'Moves',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9654;</Text>,
+          tabBarIcon: ({ color, size }) => <Ionicons name="play-circle-outline" size={iconSize} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'Me',
           headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9787;</Text>,
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={iconSize} color={color} />,
         }}
       />
     </Tabs>
