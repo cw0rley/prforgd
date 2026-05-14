@@ -273,8 +273,8 @@ const styles = StyleSheet.create({
   },
   chipDivider: {
     width: 1,
-    backgroundColor: colors.cardBorder,
-    marginHorizontal: 3,
+    backgroundColor: colors.text,
+    marginHorizontal: 6,
     marginVertical: 4,
   },
   countText: {
