@@ -25,8 +25,6 @@ const categoryLabels: Record<string, string> = {
   leo: 'LEO',
 };
 
-type SortOption = 'az' | 'branch' | 'type';
-
 export default function HomeScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
@@ -35,8 +33,9 @@ export default function HomeScreen() {
   const [filterByEquipment, setFilterByEquipment] = useState(false);
   const [filterFavorites, setFilterFavorites] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [sort, setSort] = useState<SortOption>('az');
   const [groupFilter, setGroupFilter] = useState<'all' | 'hero' | 'girl' | 'benchmark'>('all');
+  const [branchFilter, setBranchFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -72,13 +71,14 @@ export default function HomeScreen() {
         !filterFavorites || favorites.includes(w.id);
       const matchesGroup =
         groupFilter === 'all' || (w.group || 'hero') === groupFilter;
-      return matchesSearch && matchesEquipment && matchesFavorites && matchesGroup;
+      const matchesBranch =
+        !branchFilter || w.category === branchFilter;
+      const matchesType =
+        !typeFilter || w.type === typeFilter;
+      return matchesSearch && matchesEquipment && matchesFavorites && matchesGroup && matchesBranch && matchesType;
     })
     .sort((a, b) => {
-      if (sort === 'az') return a.name.localeCompare(b.name);
-      if (sort === 'branch') return a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
-      if (sort === 'type') return a.type.localeCompare(b.type) || a.name.localeCompare(b.name);
-      return 0;
+      return a.name.localeCompare(b.name);
     });
 
   function renderPR(wod: HeroWod) {
@@ -150,14 +150,39 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ))}
         <View style={styles.chipDivider} />
-        {(['az', 'branch', 'type'] as SortOption[]).map((s) => (
+        {([
+          { key: null, label: 'All' },
+          { key: 'army', label: 'Army' },
+          { key: 'navy', label: 'Navy' },
+          { key: 'marines', label: 'Marines' },
+          { key: 'air-force', label: 'USAF' },
+          { key: 'firefighter', label: 'Fire' },
+          { key: 'leo', label: 'LEO' },
+        ] as const).map((b) => (
           <TouchableOpacity
-            key={s}
-            style={[styles.chip, sort === s && styles.chipActive]}
-            onPress={() => setSort(s)}
+            key={b.label}
+            style={[styles.chip, branchFilter === b.key && styles.chipActive]}
+            onPress={() => setBranchFilter(branchFilter === b.key ? null : b.key)}
           >
-            <Text style={[styles.chipText, sort === s && styles.chipTextActive]}>
-              {s === 'az' ? 'A-Z' : s === 'branch' ? 'Branch' : 'Type'}
+            <Text style={[styles.chipText, branchFilter === b.key && styles.chipTextActive]}>
+              {b.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <View style={styles.chipDivider} />
+        {([
+          { key: null, label: 'All' },
+          { key: 'for-time', label: 'For Time' },
+          { key: 'rounds-for-time', label: 'Rounds' },
+          { key: 'amrap', label: 'AMRAP' },
+        ] as const).map((t) => (
+          <TouchableOpacity
+            key={t.label}
+            style={[styles.chip, typeFilter === t.key && styles.chipActive]}
+            onPress={() => setTypeFilter(typeFilter === t.key ? null : t.key)}
+          >
+            <Text style={[styles.chipText, typeFilter === t.key && styles.chipTextActive]}>
+              {t.label}
             </Text>
           </TouchableOpacity>
         ))}

@@ -5,7 +5,8 @@ import { colors } from '../../src/theme';
 export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isDesktop = width > 768;
-  const iconSize = isDesktop ? 28 : 24;
+  const iconSize = isDesktop ? 28 : 22;
+  const labelSize = isDesktop ? 14 : 11;
 
   return (
     <Tabs
@@ -21,10 +22,10 @@ export default function TabLayout() {
           paddingTop: isDesktop ? 12 : 8,
           height: Platform.OS === 'ios' ? 90 : isDesktop ? 75 : 65,
         },
-        tabBarActiveTintColor: colors.text,
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
-          fontSize: isDesktop ? 12 : 11,
+          fontSize: labelSize,
           fontWeight: '700',
           letterSpacing: 0.5,
         },
@@ -36,14 +37,6 @@ export default function TabLayout() {
           title: 'WODs',
           headerShown: false,
           tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9776;</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="movements"
-        options={{
-          title: 'Moves',
-          headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9654;</Text>,
         }}
       />
       <Tabs.Screen
@@ -68,6 +61,14 @@ export default function TabLayout() {
           title: 'Gear',
           headerShown: false,
           tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9881;</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="movements"
+        options={{
+          title: 'Moves',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: iconSize, color }}>&#9654;</Text>,
         }}
       />
       <Tabs.Screen
