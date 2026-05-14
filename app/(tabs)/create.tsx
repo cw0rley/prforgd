@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.xl * 2,
     paddingBottom: 120,
   },
   title: {

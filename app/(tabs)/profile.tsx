@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.xl * 2,
     paddingBottom: spacing.xl * 3,
   },
   title: {

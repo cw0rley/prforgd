@@ -19,11 +19,8 @@ const safeAreaCSS = `
     }
     /* Ensure viewport respects safe areas */
     body {
-      padding-top: env(safe-area-inset-top, 0px);
-      padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
-    #root {
-      padding-top: env(safe-area-inset-top, 0px);
+      padding: 0;
+      margin: 0;
     }
   </style>`;
 
