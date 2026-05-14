@@ -11,8 +11,26 @@ const pwaTags = `
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icon-192.png" />`;
 
+const safeAreaCSS = `
+  <style>
+    /* Fix tab bar for iPhone safe area in all browsers */
+    [role="tabbar"], [data-testid="tabbar"] {
+      padding-bottom: env(safe-area-inset-bottom, 8px) !important;
+    }
+    /* Ensure viewport respects safe areas */
+    body {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+  </style>`;
+
 // Insert before </head>
-html = html.replace('</head>', pwaTags + '\n</head>');
+html = html.replace('</head>', pwaTags + safeAreaCSS + '\n</head>');
+
+// Ensure viewport-fit=cover for safe area insets
+html = html.replace(
+  'width=device-width, initial-scale=1, shrink-to-fit=no',
+  'width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover'
+);
 
 fs.writeFileSync(indexPath, html);
 console.log('PWA tags injected into index.html');
