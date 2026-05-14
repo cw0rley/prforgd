@@ -2,10 +2,13 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
+import { useKeepAwake } from 'expo-keep-awake';
 import { colors } from '../src/theme';
 import { supabase } from '../src/lib/supabase';
 
 export default function RootLayout() {
+  useKeepAwake();
+
   // Handle OAuth callback - pick up session from URL hash after Google redirect
   useEffect(() => {
     if (Platform.OS === 'web' && window.location.hash) {

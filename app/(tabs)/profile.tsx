@@ -163,6 +163,9 @@ export default function ProfileScreen() {
             {syncing ? 'SYNCING...' : 'SYNC DATA'}
           </Text>
         </TouchableOpacity>
+        <Text style={styles.syncHint}>
+          Uploads your local workouts, favorites, and equipment to the cloud. Downloads any data from other devices. Use this to keep all your devices in sync.
+        </Text>
 
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
           <Text style={styles.signOutBtnText}>SIGN OUT</Text>
@@ -416,6 +419,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 2,
+  },
+  syncHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    lineHeight: 18,
   },
   signOutBtn: {
     backgroundColor: colors.card,

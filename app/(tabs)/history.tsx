@@ -21,7 +21,7 @@ import { colors, spacing } from '../../src/theme';
 
 export default function HistoryScreen() {
   const [results, setResults] = useState<WorkoutResult[]>([]);
-  const [filter, setFilter] = useState<'all' | 'pr'>('all');
+  const [filter, setFilter] = useState<'all' | 'pr' | 'rx' | 'scaled'>('all');
   const router = useRouter();
 
   useFocusEffect(
@@ -93,13 +93,30 @@ export default function HistoryScreen() {
           >
             <Text style={[styles.filterText, filter === 'pr' && styles.filterTextActive]}>PRs</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterBtn, filter === 'rx' && styles.filterBtnActive]}
+            onPress={() => setFilter(filter === 'rx' ? 'all' : 'rx')}
+          >
+            <Text style={[styles.filterText, filter === 'rx' && styles.filterTextActive]}>Rx</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterBtn, filter === 'scaled' && styles.filterBtnActive]}
+            onPress={() => setFilter(filter === 'scaled' ? 'all' : 'scaled')}
+          >
+            <Text style={[styles.filterText, filter === 'scaled' && styles.filterTextActive]}>Scaled</Text>
+          </TouchableOpacity>
         </View>
 
         {results.length === 0 && (
           <Text style={styles.empty}>No workouts logged yet. Get after it!</Text>
         )}
 
-        {results.filter((r) => filter === 'all' || r.isPR).map((r) => (
+        {results.filter((r) => {
+          if (filter === 'pr') return r.isPR;
+          if (filter === 'rx') return r.rx;
+          if (filter === 'scaled') return !r.rx;
+          return true;
+        }).map((r) => (
           <TouchableOpacity
             key={r.id}
             style={styles.card}
