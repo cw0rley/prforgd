@@ -123,7 +123,7 @@ export default function HomeScreen() {
           style={[styles.chip, filterFavorites && styles.chipActive]}
           onPress={() => setFilterFavorites(!filterFavorites)}
         >
-          <Text style={[styles.chipText, filterFavorites && styles.chipTextActive]}>FAVS</Text>
+          <Text style={[styles.chipText, filterFavorites && styles.chipTextActive]}>Favs</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.chip, filterByEquipment && styles.chipActive]}
@@ -135,7 +135,7 @@ export default function HomeScreen() {
             }
           }}
         >
-          <Text style={[styles.chipText, filterByEquipment && styles.chipTextActive]}>MY GEAR</Text>
+          <Text style={[styles.chipText, filterByEquipment && styles.chipTextActive]}>My Gear</Text>
         </TouchableOpacity>
         <View style={styles.chipDivider} />
         {(['all', 'hero', 'girl', 'benchmark'] as const).map((g) => (
