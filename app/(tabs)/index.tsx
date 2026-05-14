@@ -118,29 +118,38 @@ export default function HomeScreen() {
         value={search}
         onChangeText={setSearch}
       />
-      <View style={styles.filterRow}>
-        <TouchableOpacity
-          style={[styles.filterBtn, filterFavorites && styles.filterBtnActive]}
-          onPress={() => setFilterFavorites(!filterFavorites)}
-        >
-          <Text style={[styles.filterText, filterFavorites && styles.filterTextActive]}>
-            FAVS
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterBtn, filterByEquipment && styles.filterBtnActive]}
-          onPress={() => {
-            if (userEquipment.length === 0) {
-              router.push('/(tabs)/equipment');
-            } else {
-              setFilterByEquipment(!filterByEquipment);
-            }
-          }}
-        >
-          <Text style={[styles.filterText, filterByEquipment && styles.filterTextActive]}>
-            MY GEAR
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.filterSortRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+          <TouchableOpacity
+            style={[styles.chip, filterFavorites && styles.chipActive]}
+            onPress={() => setFilterFavorites(!filterFavorites)}
+          >
+            <Text style={[styles.chipText, filterFavorites && styles.chipTextActive]}>FAVS</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.chip, filterByEquipment && styles.chipActive]}
+            onPress={() => {
+              if (userEquipment.length === 0) {
+                router.push('/(tabs)/equipment');
+              } else {
+                setFilterByEquipment(!filterByEquipment);
+              }
+            }}
+          >
+            <Text style={[styles.chipText, filterByEquipment && styles.chipTextActive]}>MY GEAR</Text>
+          </TouchableOpacity>
+          {(['all', 'hero', 'girl', 'benchmark'] as const).map((g) => (
+            <TouchableOpacity
+              key={g}
+              style={[styles.chip, groupFilter === g && styles.chipActive]}
+              onPress={() => setGroupFilter(g)}
+            >
+              <Text style={[styles.chipText, groupFilter === g && styles.chipTextActive]}>
+                {g === 'all' ? 'All' : g === 'hero' ? 'Hero' : g === 'girl' ? 'Girl' : 'WOD'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
         <View style={styles.sortGroup}>
           {(['az', 'branch', 'type'] as SortOption[]).map((s) => (
             <TouchableOpacity
@@ -154,19 +163,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
-      </View>
-      <View style={styles.groupRow}>
-        {(['all', 'hero', 'girl', 'benchmark'] as const).map((g) => (
-          <TouchableOpacity
-            key={g}
-            style={[styles.sortBtn, groupFilter === g && styles.sortBtnActive]}
-            onPress={() => setGroupFilter(g)}
-          >
-            <Text style={[styles.sortText, groupFilter === g && styles.sortTextActive]}>
-              {g === 'all' ? 'All' : g === 'hero' ? 'Hero' : g === 'girl' ? 'Girl' : 'Benchmark'}
-            </Text>
-          </TouchableOpacity>
-        ))}
       </View>
       <Text style={styles.countText}>{filtered.length} WODs</Text>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.list}>
@@ -253,58 +249,58 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  filterRow: {
+  filterSortRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
     alignItems: 'center',
-    flexWrap: 'wrap',
+    marginBottom: spacing.sm,
   },
-  filterBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+  chipScroll: {
+    flex: 1,
+    flexGrow: 1,
+  },
+  chip: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+    marginRight: 5,
   },
-  filterBtnActive: {
+  chipActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  filterText: {
-    fontSize: 12,
+  chipText: {
+    fontSize: 11,
     fontWeight: '700',
     color: colors.textMuted,
-    letterSpacing: 1,
   },
-  filterTextActive: {
+  chipTextActive: {
     color: colors.background,
   },
   sortGroup: {
     flexDirection: 'row',
     gap: 2,
-    marginLeft: 'auto',
+    paddingLeft: 6,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.cardBorder,
+    marginLeft: 4,
   },
   sortBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
     borderRadius: 6,
   },
   sortBtnActive: {
     backgroundColor: colors.cardBorder,
   },
   sortText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.textMuted,
   },
   sortTextActive: {
     color: colors.text,
-  },
-  groupRow: {
-    flexDirection: 'row',
-    gap: 2,
-    marginBottom: spacing.sm,
   },
   countText: {
     fontSize: 12,
