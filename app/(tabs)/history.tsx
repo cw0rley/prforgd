@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { saveGeneratedWod } from '../../src/storage/generatedWodStorage';
 import {
   getResults,
@@ -70,7 +71,13 @@ export default function HistoryScreen() {
 
   return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>WORKOUT LOG</Text>
+        <View style={styles.logHeader}>
+          <Text style={styles.title}>WORKOUT LOG</Text>
+          <TouchableOpacity onPress={() => router.push('/export')} style={styles.exportBtn}>
+            <Ionicons name="download-outline" size={18} color={colors.primary} />
+            <Text style={styles.exportLink}>Export</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.subtitle}>{results.length} workouts logged</Text>
 
         <View style={styles.filterRow}>
@@ -148,6 +155,21 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xl * 2,
+  },
+  logHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  exportLink: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
   title: {
     fontSize: 24,

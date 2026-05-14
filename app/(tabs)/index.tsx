@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import {
   View,
   Text,
+  Image,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -107,9 +108,10 @@ export default function HomeScreen() {
           <Text style={styles.titlePR}>PR</Text>
           <Text style={styles.titleFORGD}>FORGD</Text>
         </Text>
-        <TouchableOpacity onPress={() => router.push('/export')}>
-          <Text style={styles.headerLink}>Export</Text>
-        </TouchableOpacity>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.logoIcon}
+        />
       </View>
       <TextInput
         style={styles.searchInput}
@@ -256,10 +258,10 @@ const styles = StyleSheet.create({
   titleFORGD: {
     color: colors.text,
   },
-  headerLink: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
+  logoIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 10,
   },
   searchInput: {
     backgroundColor: colors.card,
