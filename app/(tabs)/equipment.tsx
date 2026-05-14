@@ -66,7 +66,6 @@ export default function EquipmentScreen() {
               onPress={() => toggle(item.id)}
               activeOpacity={0.7}
             >
-              <Text style={styles.equipIcon}>{item.icon}</Text>
               <Text style={[styles.equipName, isSelected && styles.equipNameSelected]}>
                 {item.name}
               </Text>
@@ -135,10 +134,6 @@ const styles = StyleSheet.create({
   },
   cardSelected: {
     borderColor: colors.primary,
-  },
-  equipIcon: {
-    fontSize: 24,
-    marginRight: spacing.md,
   },
   equipName: {
     flex: 1,

@@ -5,20 +5,20 @@ export interface Equipment {
 }
 
 export const allEquipment: Equipment[] = [
-  { id: 'barbell', name: 'Barbell & Plates', icon: '🏋️' },
-  { id: 'pullup-bar', name: 'Pull-Up Bar', icon: '🔩' },
-  { id: 'kettlebell', name: 'Kettlebell', icon: '🔔' },
-  { id: 'dumbbells', name: 'Dumbbells', icon: '💪' },
-  { id: 'box', name: 'Box', icon: '📦' },
-  { id: 'rings', name: 'Rings', icon: '⭕' },
-  { id: 'rope', name: 'Rope', icon: '🪢' },
-  { id: 'rower', name: 'Rower', icon: '🚣' },
-  { id: 'ghd', name: 'GHD', icon: '🪑' },
-  { id: 'wall-ball', name: 'Wall Ball', icon: '⚽' },
-  { id: 'jump-rope', name: 'Jump Rope', icon: '〰️' },
-  { id: 'bench', name: 'Bench', icon: '🛋️' },
-  { id: 'run-space', name: 'Running Space', icon: '🏃' },
-  { id: 'pool', name: 'Pool', icon: '🏊' },
+  { id: 'barbell', name: 'Barbell & Plates', icon: '--' },
+  { id: 'pullup-bar', name: 'Pull-Up Bar / Rig', icon: '--' },
+  { id: 'kettlebell', name: 'Kettlebell', icon: '--' },
+  { id: 'dumbbells', name: 'Dumbbells', icon: '--' },
+  { id: 'box', name: 'Plyo Box', icon: '--' },
+  { id: 'rings', name: 'Gymnastic Rings', icon: '--' },
+  { id: 'rope', name: 'Climbing Rope', icon: '--' },
+  { id: 'rower', name: 'Rower / Erg', icon: '--' },
+  { id: 'ghd', name: 'GHD Machine', icon: '--' },
+  { id: 'wall-ball', name: 'Medicine Ball', icon: '--' },
+  { id: 'jump-rope', name: 'Jump Rope', icon: '--' },
+  { id: 'bench', name: 'Flat Bench', icon: '--' },
+  { id: 'run-space', name: 'Running Space', icon: '--' },
+  { id: 'pool', name: 'Pool', icon: '--' },
 ];
 
 // Map each movement to the equipment it requires
