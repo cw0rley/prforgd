@@ -7,12 +7,14 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { allEquipment } from '../../src/data/equipment';
 import { getUserEquipment, saveUserEquipment } from '../../src/storage/equipmentStorage';
 import { colors, spacing } from '../../src/theme';
 
 export default function EquipmentScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -44,7 +46,7 @@ export default function EquipmentScreen() {
   }
 
   return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]} contentContainerStyle={styles.content}>
         <Text style={styles.title}>MY GEAR</Text>
         <Text style={styles.subtitle}>Select what you have access to. WODs will be filtered based on your equipment.</Text>
 
@@ -86,7 +88,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingTop: Platform.OS === 'web' ? spacing.md : spacing.xl * 2,
     paddingBottom: spacing.xl * 2,
   },
   title: {

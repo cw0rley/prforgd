@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { movements, Movement } from '../../src/data/movements';
 import { colors, spacing } from '../../src/theme';
@@ -28,6 +29,7 @@ function getYouTubeId(url: string): string | null {
 }
 
 export default function MovementsScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export default function MovementsScreen() {
 
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]} contentContainerStyle={styles.content}>
         <Text style={styles.pageTitle}>MOVEMENTS</Text>
         <TextInput
           style={styles.searchInput}
@@ -153,7 +155,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingTop: Platform.OS === 'web' ? spacing.md : spacing.xl * 2,
     paddingBottom: spacing.xl * 2,
   },
   pageTitle: {

@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { saveGeneratedWod } from '../../src/storage/generatedWodStorage';
@@ -21,6 +22,7 @@ import { heroWods } from '../../src/data/heroWods';
 import { colors, spacing } from '../../src/theme';
 
 export default function HistoryScreen() {
+  const insets = useSafeAreaInsets();
   const [results, setResults] = useState<WorkoutResult[]>([]);
   const [filter, setFilter] = useState<'all' | 'pr' | 'rx' | 'scaled'>('all');
   const router = useRouter();
@@ -71,7 +73,7 @@ export default function HistoryScreen() {
   }
 
   return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]} contentContainerStyle={styles.content}>
         <Text style={styles.title}>WORKOUT LOG</Text>
         <View style={styles.logSubRow}>
           <Text style={styles.subtitle}>{results.length} workouts logged</Text>
@@ -171,7 +173,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingTop: Platform.OS === 'web' ? spacing.md : spacing.xl * 2,
     paddingBottom: spacing.xl * 2,
   },
   logSubRow: {
