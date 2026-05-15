@@ -90,7 +90,7 @@ export default function CreateScreen() {
 
   return (
     <>
-      <ScrollView style={[styles.container, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]}>
         <Text style={styles.title}>CREATE</Text>
 
         {/* Tab toggle */}

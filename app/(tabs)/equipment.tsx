@@ -46,7 +46,7 @@ export default function EquipmentScreen() {
   }
 
   return (
-      <ScrollView style={[styles.container, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]}>
         <Text style={styles.title}>MY GEAR</Text>
         <Text style={styles.subtitle}>Select what you have access to. WODs will be filtered based on your equipment.</Text>
 

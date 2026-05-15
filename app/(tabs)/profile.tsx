@@ -133,7 +133,7 @@ export default function ProfileScreen() {
 
   if (session) {
     return (
-      <ScrollView style={[styles.container, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]}>
         <Text style={styles.title}>PROFILE</Text>
 
         <View style={styles.profileCard}>
@@ -175,7 +175,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]}>
       <Text style={styles.title}>PROFILE</Text>
       <Text style={styles.subtitle}>
         Sign in to sync your workouts, PRs, and favorites across devices.
