@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInput,
+  Platform,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { heroWods, HeroWod } from '../../src/data/heroWods';
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xl * 2,
+    paddingTop: Platform.OS === 'web' ? spacing.md : spacing.xl * 2,
   },
   header: {
     flexDirection: 'row',

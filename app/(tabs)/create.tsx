@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { getUserEquipment } from '../../src/storage/equipmentStorage';
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingTop: spacing.xl * 2,
+    paddingTop: Platform.OS === 'web' ? spacing.md : spacing.xl * 2,
     paddingBottom: 120,
   },
   title: {

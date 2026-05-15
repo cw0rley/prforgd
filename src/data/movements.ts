@@ -161,10 +161,58 @@ export const movements: Movement[] = [
   { id: 'swim', name: 'Swim', videoUrl: '', category: 'cardio' },
 ];
 
+// Direct name-to-movement overrides for WOD movement names that don't match exactly
+const movementAliases: Record<string, string> = {
+  'Pull-Up': 'Kipping Pull-Up',
+  'Push-Up': 'Push-Up',
+  'Sit-Up': 'AbMat Sit-Up',
+  'Row': 'Row',
+  'Squat Clean': 'Squat Clean',
+  'Power Clean': 'Power Clean',
+  'Hang Clean': 'Hang Clean',
+  'Snatch': 'Snatch',
+  'Power Snatch': 'Power Snatch',
+  'Clean': 'Clean',
+  'Muscle-Up': 'Kipping Muscle-Up',
+  'Ring Dip': 'Ring Dip',
+  'Rope Climb': 'Rope Climb',
+  'Handstand Push-Up': 'Strict Handstand Push-Up',
+  'Toes-to-Bar': 'Kipping Toes-To-Bar',
+  'Back Extension': 'GHD Back Extension',
+  'Dumbbell Snatch': 'Dumbbell Power Snatch',
+  'Shoulder-to-Overhead': 'Push Press',
+  'Weighted Pull-Up': 'Strict Pull-Up',
+  'Bear Crawl': '',
+  'Sprint': '',
+  'Standing Broad Jump': '',
+  'Dumbbell Lunge': 'Dumbbell Front-Rack Lunge',
+  'Dumbbell Split Clean': 'Dumbbell Clean',
+  'Clean & Jerk': 'Clean & Jerk',
+  'Dumbell Push Press': 'Dumbbell Push Press',
+  'Hang Squat Clean': 'Squat Clean',
+  'Jerk': 'Split Jerk',
+  'Pistol': 'Pistol (Single-Leg Squat)',
+  'Squat': 'Air Squat',
+};
+
 export function findMovement(name: string): Movement | undefined {
-  const lower = name.toLowerCase().replace(/[^a-z ]/g, '');
-  return movements.find((m) => {
-    const mLower = m.name.toLowerCase().replace(/[^a-z ]/g, '');
-    return lower.includes(mLower) || mLower.includes(lower);
-  });
+  // Check alias first
+  if (name in movementAliases) {
+    const target = movementAliases[name];
+    if (!target) return undefined; // explicitly no match
+    const found = movements.find((m) => m.name === target);
+    if (found) return found;
+  }
+
+  // Exact match
+  const exact = movements.find((m) => m.name === name);
+  if (exact) return exact;
+
+  // Case-insensitive exact
+  const lower = name.toLowerCase();
+  const ciExact = movements.find((m) => m.name.toLowerCase() === lower);
+  if (ciExact) return ciExact;
+
+  // No match — don't guess
+  return undefined;
 }

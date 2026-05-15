@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingTop: spacing.xl * 2,
+    paddingTop: Platform.OS === 'web' ? spacing.md : spacing.xl * 2,
     paddingBottom: spacing.xl * 2,
   },
   logSubRow: {
