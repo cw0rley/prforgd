@@ -141,23 +141,44 @@ export async function fetchEquipmentFromCloud(userId: string): Promise<string[]>
   return data?.equipment || [];
 }
 
-// --- Full sync ---
-export async function fullSyncToCloud(userId: string) {
-  await Promise.all([
-    syncResultsToCloud(userId),
-    syncFavoritesToCloud(userId),
-    syncEquipmentToCloud(userId),
-  ]);
-}
+// --- Full sync (merge, not overwrite) ---
+export async function fullSync(userId: string) {
+  // --- Merge workout results ---
+  const localResultsData = await AsyncStorage.getItem('workout_results');
+  const localResults: any[] = localResultsData ? JSON.parse(localResultsData) : [];
+  const cloudResults = await fetchResultsFromCloud(userId);
 
-export async function fullSyncFromCloud(userId: string) {
-  const [results, favs, equipment] = await Promise.all([
-    fetchResultsFromCloud(userId),
-    fetchFavoritesFromCloud(userId),
-    fetchEquipmentFromCloud(userId),
-  ]);
+  // Combine by id, local wins for duplicates
+  const resultMap = new Map<string, any>();
+  for (const r of cloudResults) resultMap.set(r.id, r);
+  for (const r of localResults) resultMap.set(r.id, r);
+  const mergedResults = Array.from(resultMap.values());
 
-  await AsyncStorage.setItem('workout_results', JSON.stringify(results));
-  await AsyncStorage.setItem('favorite_wods', JSON.stringify(favs));
-  await AsyncStorage.setItem('user_equipment', JSON.stringify(equipment));
+  await AsyncStorage.setItem('workout_results', JSON.stringify(mergedResults));
+
+  // Upload any local results not in cloud
+  const cloudIds = new Set(cloudResults.map((r: any) => r.id));
+  const newLocal = localResults.filter((r) => !cloudIds.has(r.id));
+  for (const r of newLocal) {
+    await saveResultToCloud(userId, r);
+  }
+
+  // --- Merge favorites (union of both) ---
+  const localFavsData = await AsyncStorage.getItem('favorite_wods');
+  const localFavs: string[] = localFavsData ? JSON.parse(localFavsData) : [];
+  const cloudFavs = await fetchFavoritesFromCloud(userId);
+
+  const mergedFavs = Array.from(new Set([...localFavs, ...cloudFavs]));
+  await AsyncStorage.setItem('favorite_wods', JSON.stringify(mergedFavs));
+
+  // Upload any local favs not in cloud
+  const cloudFavSet = new Set(cloudFavs);
+  for (const wodId of localFavs) {
+    if (!cloudFavSet.has(wodId)) {
+      await toggleFavoriteCloud(userId, wodId, true);
+    }
+  }
+
+  // --- Equipment: local wins (most recent edit) ---
+  await syncEquipmentToCloud(userId);
 }

@@ -162,6 +162,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     letterSpacing: 3,
     marginBottom: spacing.md,
+    textAlign: 'center',
   },
   searchInput: {
     backgroundColor: colors.card,

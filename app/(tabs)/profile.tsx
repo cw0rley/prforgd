@@ -13,7 +13,7 @@ import { useFocusEffect } from 'expo-router';
 import { Session } from '@supabase/supabase-js';
 import { signUp, signIn, signOut, getSession, onAuthChange } from '../../src/lib/auth';
 import { supabase } from '../../src/lib/supabase';
-import { fullSyncToCloud, fullSyncFromCloud } from '../../src/lib/sync';
+import { fullSync } from '../../src/lib/sync';
 import { getResults } from '../../src/storage/workoutStorage';
 import { getFavorites } from '../../src/storage/favoritesStorage';
 import { colors, spacing } from '../../src/theme';
@@ -77,8 +77,7 @@ export default function ProfileScreen() {
       setSession(s);
       if (s) {
         setSyncing(true);
-        await fullSyncToCloud(s.user.id);
-        await fullSyncFromCloud(s.user.id);
+        await fullSync(s.user.id);
         setSyncing(false);
         loadStats();
         showAlert('Signed in', 'Your data has been synced!');
@@ -121,8 +120,7 @@ export default function ProfileScreen() {
     if (!session) return;
     setSyncing(true);
     try {
-      await fullSyncToCloud(session.user.id);
-      await fullSyncFromCloud(session.user.id);
+      await fullSync(session.user.id);
       loadStats();
       showAlert('Synced', 'Your data is up to date!');
     } catch (err: any) {
@@ -164,7 +162,7 @@ export default function ProfileScreen() {
           </Text>
         </TouchableOpacity>
         <Text style={styles.syncHint}>
-          Uploads your local workouts, favorites, and equipment to the cloud. Downloads any data from other devices. Use this to keep all your devices in sync.
+          Merges your data across devices. Workouts and favorites are combined — nothing gets overwritten. Equipment uses your latest local settings.
         </Text>
 
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
@@ -262,10 +260,11 @@ const styles = StyleSheet.create({
     color: colors.primary,
     letterSpacing: 3,
     marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.text,
     lineHeight: 20,
     marginBottom: spacing.lg,
   },

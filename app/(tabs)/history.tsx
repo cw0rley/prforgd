@@ -71,14 +71,14 @@ export default function HistoryScreen() {
 
   return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.logHeader}>
-          <Text style={styles.title}>WORKOUT LOG</Text>
+        <Text style={styles.title}>WORKOUT LOG</Text>
+        <View style={styles.logSubRow}>
+          <Text style={styles.subtitle}>{results.length} workouts logged</Text>
           <TouchableOpacity onPress={() => router.push('/export')} style={styles.exportBtn}>
             <Ionicons name="download-outline" size={18} color={colors.primary} />
             <Text style={styles.exportLink}>Export</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.subtitle}>{results.length} workouts logged</Text>
 
         <View style={styles.filterRow}>
           <TouchableOpacity
@@ -173,10 +173,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl * 2,
     paddingBottom: spacing.xl * 2,
   },
-  logHeader: {
+  logSubRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   exportBtn: {
     flexDirection: 'row',
@@ -191,13 +192,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '900',
-    color: colors.text,
+    color: colors.primary,
     textAlign: 'center',
     letterSpacing: 2,
   },
   subtitle: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.text,
     textAlign: 'center',
     marginTop: spacing.xs,
     marginBottom: spacing.lg,

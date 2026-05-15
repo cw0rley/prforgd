@@ -263,6 +263,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     letterSpacing: 3,
     marginBottom: spacing.md,
+    textAlign: 'center',
   },
   tabRow: {
     flexDirection: 'row',
@@ -292,7 +293,7 @@ const styles = StyleSheet.create({
   },
   sectionHint: {
     fontSize: 13,
-    color: colors.textMuted,
+    color: colors.text,
     marginBottom: spacing.md,
   },
   generateBtn: {

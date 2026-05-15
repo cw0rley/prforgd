@@ -45,7 +45,7 @@ export default function EquipmentScreen() {
 
   return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>MY EQUIPMENT</Text>
+        <Text style={styles.title}>MY GEAR</Text>
         <Text style={styles.subtitle}>Select what you have access to. WODs will be filtered based on your equipment.</Text>
 
         <View style={styles.quickActions}>
@@ -86,18 +86,19 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
+    paddingTop: spacing.xl * 2,
     paddingBottom: spacing.xl * 2,
   },
   title: {
     fontSize: 24,
     fontWeight: '900',
-    color: colors.text,
+    color: colors.primary,
     textAlign: 'center',
     letterSpacing: 2,
   },
   subtitle: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.text,
     textAlign: 'center',
     marginTop: spacing.sm,
     marginBottom: spacing.lg,
