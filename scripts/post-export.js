@@ -22,6 +22,10 @@ const safeAreaCSS = `
       padding: 0;
       margin: 0;
     }
+    /* Push app content below iPhone status bar in PWA mode */
+    #root {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
   </style>`;
 
 // Insert before </head>

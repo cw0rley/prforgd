@@ -7,9 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInput,
-  Platform,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { heroWods, HeroWod } from '../../src/data/heroWods';
 import { getPRForWod, formatTime, WorkoutResult } from '../../src/storage/workoutStorage';
@@ -29,7 +27,6 @@ const categoryLabels: Record<string, string> = {
 };
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [prs, setPrs] = useState<Record<string, WorkoutResult | null>>({});
@@ -105,7 +102,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>
           <Text style={styles.titlePR}>PR</Text>
@@ -242,6 +239,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
   },
   header: {
     flexDirection: 'row',

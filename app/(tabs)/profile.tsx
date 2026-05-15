@@ -9,7 +9,6 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Session } from '@supabase/supabase-js';
 import { signUp, signIn, signOut, getSession, onAuthChange } from '../../src/lib/auth';
@@ -25,7 +24,6 @@ function showAlert(title: string, msg: string) {
 }
 
 export default function ProfileScreen() {
-  const insets = useSafeAreaInsets();
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -133,7 +131,7 @@ export default function ProfileScreen() {
 
   if (session) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>PROFILE</Text>
 
         <View style={styles.profileCard}>
@@ -175,7 +173,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>PROFILE</Text>
       <Text style={styles.subtitle}>
         Sign in to sync your workouts, PRs, and favorites across devices.

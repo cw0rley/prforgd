@@ -6,9 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Platform,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { getUserEquipment } from '../../src/storage/equipmentStorage';
 import { saveGeneratedWod } from '../../src/storage/generatedWodStorage';
@@ -23,7 +21,6 @@ const wodTypeOptions: { key: GeneratedWodType; label: string }[] = [
 ];
 
 export default function CreateScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [userEquipment, setUserEquipment] = useState<string[]>([]);
   const [tab, setTab] = useState<'generate' | 'custom'>('generate');
@@ -90,7 +87,7 @@ export default function CreateScreen() {
 
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'web' ? spacing.md : insets.top + spacing.sm }]}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>CREATE</Text>
 
         {/* Tab toggle */}
