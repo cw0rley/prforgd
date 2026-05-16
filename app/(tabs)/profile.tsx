@@ -99,7 +99,7 @@ export default function ProfileScreen() {
     }
   }
 
-  async function handleSocialSignIn(provider: 'google' | 'facebook') {
+  async function handleSocialSignIn(provider: 'google' | 'facebook' | 'apple') {
     setLoading(true);
     try {
       const redirectTo = Platform.OS === 'web'
@@ -240,6 +240,14 @@ export default function ProfileScreen() {
         <Text style={styles.googleBtnText}>CONTINUE WITH GOOGLE</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.appleBtn}
+        onPress={() => handleSocialSignIn('apple')}
+        disabled={loading}
+      >
+        <Text style={styles.appleBtnText}>CONTINUE WITH APPLE</Text>
+      </TouchableOpacity>
+
     </ScrollView>
   );
 }
@@ -329,6 +337,19 @@ const styles = StyleSheet.create({
   },
   googleBtnText: {
     color: '#333',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  appleBtn: {
+    backgroundColor: '#000',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  appleBtnText: {
+    color: '#fff',
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 1,
