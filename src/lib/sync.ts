@@ -9,6 +9,7 @@ export async function syncResultsToCloud(userId: string) {
   if (localResults.length === 0) return;
 
   const rows = localResults.map((r) => ({
+    id: r.id,
     user_id: userId,
     wod_id: r.wodId,
     wod_name: r.wodName || null,
@@ -58,7 +59,8 @@ export async function fetchResultsFromCloud(userId: string): Promise<WorkoutResu
 }
 
 export async function saveResultToCloud(userId: string, result: WorkoutResult) {
-  const { error } = await supabase.from('workout_results').insert({
+  const { error } = await supabase.from('workout_results').upsert({
+    id: result.id,
     user_id: userId,
     wod_id: result.wodId,
     wod_name: result.wodName || null,
@@ -141,27 +143,25 @@ export async function fetchEquipmentFromCloud(userId: string): Promise<string[]>
   return data?.equipment || [];
 }
 
-// --- Full sync (merge, not overwrite) ---
+// --- Full sync (cloud is source of truth after uploading local-only results) ---
 export async function fullSync(userId: string) {
-  // --- Merge workout results ---
+  // --- Workout results ---
   const localResultsData = await AsyncStorage.getItem('workout_results');
   const localResults: any[] = localResultsData ? JSON.parse(localResultsData) : [];
   const cloudResults = await fetchResultsFromCloud(userId);
 
-  // Combine by id, local wins for duplicates
-  const resultMap = new Map<string, any>();
-  for (const r of cloudResults) resultMap.set(r.id, r);
-  for (const r of localResults) resultMap.set(r.id, r);
-  const mergedResults = Array.from(resultMap.values());
+  // Find local results not yet in cloud (by wodId + date to avoid dupes)
+  const cloudKeys = new Set(cloudResults.map((r: any) => `${r.wodId}|${r.date}`));
+  const newLocal = localResults.filter((r: any) => !cloudKeys.has(`${r.wodId}|${r.date}`));
 
-  await AsyncStorage.setItem('workout_results', JSON.stringify(mergedResults));
-
-  // Upload any local results not in cloud
-  const cloudIds = new Set(cloudResults.map((r: any) => r.id));
-  const newLocal = localResults.filter((r) => !cloudIds.has(r.id));
+  // Upload truly new local results to cloud
   for (const r of newLocal) {
     await saveResultToCloud(userId, r);
   }
+
+  // Re-fetch cloud (now includes any new uploads) and replace local entirely
+  const finalCloud = newLocal.length > 0 ? await fetchResultsFromCloud(userId) : cloudResults;
+  await AsyncStorage.setItem('workout_results', JSON.stringify(finalCloud));
 
   // --- Merge favorites (union of both) ---
   const localFavsData = await AsyncStorage.getItem('favorite_wods');

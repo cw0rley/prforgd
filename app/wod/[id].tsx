@@ -71,7 +71,7 @@ export default function WodDetailScreen() {
       <Stack.Screen options={{
         title: wod.name,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.replace('/')}>
+          <TouchableOpacity onPress={() => router.back()}>
             <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
           </TouchableOpacity>
         ),

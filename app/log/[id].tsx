@@ -292,7 +292,7 @@ export default function LogWorkoutScreen() {
             {roundTimes.length > 0 && (
               <View style={styles.roundsList}>
                 <Text style={styles.label}>ROUND SPLITS</Text>
-                {roundTimes.map((rt) => (
+                {[...roundTimes].reverse().map((rt) => (
                   <View key={rt.round} style={styles.roundRow}>
                     <Text style={styles.roundLabel}>Round {rt.round}</Text>
                     <View style={styles.roundTimesCol}>

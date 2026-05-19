@@ -108,10 +108,6 @@ export default function HomeScreen() {
           <Text style={styles.titlePR}>PR</Text>
           <Text style={styles.titleFORGD}>FORGD</Text>
         </Text>
-        <Image
-          source={require('../../assets/icon.png')}
-          style={styles.logoIcon}
-        />
       </View>
       <TextInput
         style={styles.searchInput}
