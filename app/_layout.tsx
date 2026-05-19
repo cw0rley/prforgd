@@ -3,11 +3,13 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 import { useKeepAwake } from 'expo-keep-awake';
+import { useWakeLock } from '../src/hooks/useWakeLock';
 import { colors } from '../src/theme';
 import { supabase } from '../src/lib/supabase';
 
 export default function RootLayout() {
   useKeepAwake();
+  useWakeLock();
 
   // Handle OAuth callback - pick up session from URL hash after Google redirect
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function RootLayout() {
           headerTintColor: colors.primary,
           headerTitleStyle: { color: colors.text, fontWeight: 'bold' },
           contentStyle: { backgroundColor: colors.background },
+          headerStatusBarHeight: 0,
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

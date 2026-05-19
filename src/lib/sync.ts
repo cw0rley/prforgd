@@ -179,6 +179,17 @@ export async function fullSync(userId: string) {
     }
   }
 
-  // --- Equipment: local wins (most recent edit) ---
-  await syncEquipmentToCloud(userId);
+  // --- Equipment: merge (upload local, then pull cloud as source of truth) ---
+  const localEquipData = await AsyncStorage.getItem('user_equipment');
+  const localEquipment: string[] = localEquipData ? JSON.parse(localEquipData) : [];
+
+  if (localEquipment.length > 0) {
+    await syncEquipmentToCloud(userId);
+  }
+
+  const cloudEquipment = await fetchEquipmentFromCloud(userId);
+  if (cloudEquipment.length > 0) {
+    const merged = Array.from(new Set([...localEquipment, ...cloudEquipment]));
+    await AsyncStorage.setItem('user_equipment', JSON.stringify(merged));
+  }
 }
