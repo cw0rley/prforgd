@@ -9,6 +9,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { heroWods, HeroWod } from '../../src/data/heroWods';
 import { getPRForWod, formatTime, WorkoutResult } from '../../src/storage/workoutStorage';
 import { getUserEquipment } from '../../src/storage/equipmentStorage';
@@ -109,13 +110,26 @@ export default function HomeScreen() {
           <Text style={styles.titleFORGD}>FORGD</Text>
         </Text>
       </View>
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search by name or movement..."
-        placeholderTextColor={colors.textMuted}
-        value={search}
-        onChangeText={setSearch}
-      />
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name or movement..."
+          placeholderTextColor={colors.textMuted}
+          value={search}
+          onChangeText={setSearch}
+        />
+        <TouchableOpacity
+          style={styles.randomBtn}
+          onPress={() => {
+            if (filtered.length > 0) {
+              const pick = filtered[Math.floor(Math.random() * filtered.length)];
+              router.push(`/wod/${pick.id}`);
+            }
+          }}
+        >
+          <Ionicons name="shuffle" size={24} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
         <TouchableOpacity
           style={[styles.chip, filterFavorites && styles.chipActive]}
@@ -259,16 +273,32 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 10,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
   searchInput: {
+    flex: 1,
     backgroundColor: colors.card,
     color: colors.text,
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
     fontSize: 16,
-    marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+  },
+  randomBtn: {
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   chipScroll: {
     flexGrow: 0,
