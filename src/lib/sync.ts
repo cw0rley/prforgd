@@ -143,25 +143,28 @@ export async function fetchEquipmentFromCloud(userId: string): Promise<string[]>
   return data?.equipment || [];
 }
 
-// --- Full sync (cloud is source of truth after uploading local-only results) ---
+// --- Full sync (merge by unique id, no data loss) ---
 export async function fullSync(userId: string) {
-  // --- Workout results ---
+  // --- Workout results: true merge by id ---
   const localResultsData = await AsyncStorage.getItem('workout_results');
-  const localResults: any[] = localResultsData ? JSON.parse(localResultsData) : [];
+  const localResults: WorkoutResult[] = localResultsData ? JSON.parse(localResultsData) : [];
   const cloudResults = await fetchResultsFromCloud(userId);
 
-  // Find local results not yet in cloud (by wodId + date to avoid dupes)
-  const cloudKeys = new Set(cloudResults.map((r: any) => `${r.wodId}|${r.date}`));
-  const newLocal = localResults.filter((r: any) => !cloudKeys.has(`${r.wodId}|${r.date}`));
+  // Build merged map keyed by id — local-only results get uploaded, cloud-only stay
+  const mergedMap = new Map<string, WorkoutResult>();
+  for (const r of cloudResults) mergedMap.set(r.id, r);
+  for (const r of localResults) mergedMap.set(r.id, r); // local wins on conflict
 
-  // Upload truly new local results to cloud
-  for (const r of newLocal) {
+  // Upload any results not in cloud
+  const cloudIds = new Set(cloudResults.map((r) => r.id));
+  const localOnly = localResults.filter((r) => !cloudIds.has(r.id));
+  for (const r of localOnly) {
     await saveResultToCloud(userId, r);
   }
 
-  // Re-fetch cloud (now includes any new uploads) and replace local entirely
-  const finalCloud = newLocal.length > 0 ? await fetchResultsFromCloud(userId) : cloudResults;
-  await AsyncStorage.setItem('workout_results', JSON.stringify(finalCloud));
+  // Save merged set locally
+  const merged = Array.from(mergedMap.values());
+  await AsyncStorage.setItem('workout_results', JSON.stringify(merged));
 
   // --- Merge favorites (union of both) ---
   const localFavsData = await AsyncStorage.getItem('favorite_wods');
