@@ -6,8 +6,11 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { getUserEquipment } from '../../src/storage/equipmentStorage';
 import { saveGeneratedWod } from '../../src/storage/generatedWodStorage';
 import { generateWod, GeneratedWod, GeneratedWodType } from '../../src/data/wodGenerator';
@@ -38,11 +41,49 @@ export default function CreateScreen() {
   const [customTimeCap, setCustomTimeCap] = useState('');
   const [customWorkout, setCustomWorkout] = useState('');
 
+  // Scan state
+  const [scanning, setScanning] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       getUserEquipment().then(setUserEquipment);
     }, [])
   );
+
+  // --- Scan ---
+  async function handleScan() {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Camera permission is needed to scan workouts.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.8,
+      base64: true,
+    });
+
+    if (result.canceled || !result.assets?.[0]) return;
+
+    setScanning(true);
+    try {
+      const Tesseract = await import('tesseract.js');
+      const imageUri = Platform.OS === 'web'
+        ? result.assets[0].uri
+        : `data:image/jpeg;base64,${result.assets[0].base64}`;
+      const { data } = await Tesseract.recognize(imageUri, 'eng');
+      const text = data.text.trim();
+      if (text) {
+        setCustomWorkout((prev) => prev ? `${prev}\n${text}` : text);
+      } else {
+        alert('No text detected. Try a clearer photo.');
+      }
+    } catch {
+      alert('Failed to read text from image. Try again.');
+    } finally {
+      setScanning(false);
+    }
+  }
 
   // --- Generator ---
   function handleGenerateWod() {
@@ -218,7 +259,20 @@ export default function CreateScreen() {
               </View>
             )}
 
-            <Text style={styles.label}>WORKOUT</Text>
+            <View style={styles.workoutHeader}>
+              <Text style={[styles.label, { marginTop: 0, marginBottom: 0 }]}>WORKOUT</Text>
+              <TouchableOpacity
+                style={styles.scanBtn}
+                onPress={handleScan}
+                disabled={scanning}
+              >
+                {scanning ? (
+                  <ActivityIndicator size="small" color={colors.background} />
+                ) : (
+                  <Text style={styles.scanBtnText}>SCAN</Text>
+                )}
+              </TouchableOpacity>
+            </View>
             <TextInput
               style={styles.workoutInput}
               value={customWorkout}
@@ -409,6 +463,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
     width: 80,
+  },
+  workoutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  scanBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  scanBtnText: {
+    color: colors.background,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   workoutInput: {
     backgroundColor: colors.card,

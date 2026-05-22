@@ -193,7 +193,7 @@ export default function LogWorkoutScreen() {
 
     if (rx && !isCustom) {
       if (!currentPR) {
-        isPR = true;
+        isPR = false;
       } else if (timeSeconds !== undefined && currentPR.timeSeconds !== undefined) {
         isPR = timeSeconds < currentPR.timeSeconds;
       } else if (roundsNum !== undefined && currentPR.rounds !== undefined) {
@@ -266,13 +266,17 @@ export default function LogWorkoutScreen() {
       <Stack.Screen options={{
         title: isTimerMode ? wod.name : `Log ${wod.name}`,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => isCustom ? router.replace('/(tabs)/create') : router.replace(`/wod/${heroWod?.id}`)}>
+          <TouchableOpacity onPress={() => router.back()}>
             <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
           </TouchableOpacity>
         ),
       }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.wodName}>{wod.name}</Text>
+
+        <View style={styles.badgeRow}>
+          {rx ? <Text style={styles.rxBadge}>Rx</Text> : <Text style={styles.scaledBadge}>Scaled</Text>}
+        </View>
 
         <View style={styles.workoutBox}>
           <Text style={styles.workoutText}>{wod.workout}</Text>
@@ -519,9 +523,9 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorder,
   },
   workoutText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 22,
+    fontSize: 16,
+    color: colors.text,
+    lineHeight: 26,
   },
   section: {
     marginTop: spacing.lg,
@@ -760,6 +764,32 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
 
+  badgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  rxBadge: {
+    backgroundColor: colors.success,
+    color: colors.background,
+    fontSize: 14,
+    fontWeight: '800',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  scaledBadge: {
+    backgroundColor: colors.cardBorder,
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '800',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
   rxRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -26,6 +26,25 @@ const safeAreaCSS = `
     #root {
       padding-top: env(safe-area-inset-top, 0px);
     }
+    /* Themed scrollbars */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #002B52 #001228;
+    }
+    *::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    *::-webkit-scrollbar-track {
+      background: #001228;
+    }
+    *::-webkit-scrollbar-thumb {
+      background: #002B52;
+      border-radius: 3px;
+    }
+    *::-webkit-scrollbar-thumb:hover {
+      background: #4D7A94;
+    }
   </style>`;
 
 // Insert before </head>
