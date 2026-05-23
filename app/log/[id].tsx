@@ -23,6 +23,8 @@ import {
   RoundTime,
 } from '../../src/storage/workoutStorage';
 import { colors, spacing } from '../../src/theme';
+import { canSaveWorkout } from '../../src/lib/subscription';
+import { getSession } from '../../src/lib/auth';
 
 export default function LogWorkoutScreen() {
   useKeepAwake();
@@ -88,6 +90,13 @@ export default function LogWorkoutScreen() {
   const [notes, setNotes] = useState('');
   const [rx, setRx] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [freeRemaining, setFreeRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    import('../../src/lib/subscription').then(({ getFreeRemaining }) =>
+      getFreeRemaining().then(setFreeRemaining)
+    );
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -184,6 +193,14 @@ export default function LogWorkoutScreen() {
         return;
       }
       timeSeconds = (parseInt(minutes || '0') * 60) + parseInt(seconds || '0');
+    }
+
+    // Check subscription / free limit
+    const session = await getSession();
+    const { allowed, reason } = await canSaveWorkout(session?.user.id || null);
+    if (!allowed) {
+      router.push(`/paywall?reason=${reason}`);
+      return;
     }
 
     setSaving(true);
@@ -480,15 +497,20 @@ export default function LogWorkoutScreen() {
         )}
 
         {showPostWorkout && (
-          <TouchableOpacity
-            style={[styles.bottomBtnPrimary, saving && { opacity: 0.5 }]}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            <Text style={styles.bottomBtnPrimaryText}>
-              {saving ? 'SAVING...' : 'SAVE'}
-            </Text>
-          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            {freeRemaining !== null && freeRemaining > 0 && freeRemaining <= 10 && (
+              <Text style={styles.freeCounter}>{freeRemaining} free workout{freeRemaining === 1 ? '' : 's'} remaining</Text>
+            )}
+            <TouchableOpacity
+              style={[styles.bottomBtnPrimary, saving && { opacity: 0.5 }]}
+              onPress={handleSave}
+              disabled={saving}
+            >
+              <Text style={styles.bottomBtnPrimaryText}>
+                {saving ? 'SAVING...' : 'SAVE'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {!isTimerMode && !showPostWorkout && (
@@ -789,6 +811,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     overflow: 'hidden',
+  },
+  freeCounter: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
   },
   rxRow: {
     flexDirection: 'row',

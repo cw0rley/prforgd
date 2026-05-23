@@ -9,7 +9,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Session } from '@supabase/supabase-js';
 import { signUp, signIn, signOut, getSession, onAuthChange } from '../../src/lib/auth';
 import { supabase } from '../../src/lib/supabase';
@@ -31,6 +31,7 @@ export default function ProfileScreen() {
   const [syncing, setSyncing] = useState(false);
   const [tab, setTab] = useState<'login' | 'signup'>('login');
   const [stats, setStats] = useState({ workouts: 0, favorites: 0 });
+  const router = useRouter();
 
   useFocusEffect(
     useCallback(() => {
@@ -168,6 +169,10 @@ export default function ProfileScreen() {
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
           <Text style={styles.signOutBtnText}>SIGN OUT</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.helpBtn} onPress={() => router.push('/help')}>
+          <Text style={styles.helpBtnText}>USER MANUAL</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -246,6 +251,10 @@ export default function ProfileScreen() {
         disabled={loading}
       >
         <Text style={styles.appleBtnText}>CONTINUE WITH APPLE</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.helpBtn} onPress={() => router.push('/help')}>
+        <Text style={styles.helpBtnText}>USER MANUAL</Text>
       </TouchableOpacity>
 
     </ScrollView>
@@ -458,6 +467,20 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: 16,
     fontWeight: '800',
+    letterSpacing: 2,
+  },
+  helpBtn: {
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  helpBtnText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '700',
     letterSpacing: 2,
   },
 });

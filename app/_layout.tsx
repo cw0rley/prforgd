@@ -39,6 +39,8 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="help" options={{ title: 'User Manual' }} />
+        <Stack.Screen name="paywall" options={{ title: '' }} />
       </Stack>
     </>
   );
