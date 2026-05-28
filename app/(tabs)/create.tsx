@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
+  Alert,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -51,10 +52,20 @@ export default function CreateScreen() {
   );
 
   // --- Scan ---
+  function showAlert(title: string, msg: string) {
+    if (Platform.OS === 'web') window.alert(`${title}: ${msg}`);
+    else Alert.alert(title, msg);
+  }
+
   async function handleScan() {
+    if (Platform.OS !== 'web') {
+      showAlert('Web Only', 'Scan is only available on the web version.');
+      return;
+    }
+
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      alert('Camera permission is needed to scan workouts.');
+      showAlert('Permission Needed', 'Camera permission is needed to scan workouts.');
       return;
     }
 
@@ -68,18 +79,16 @@ export default function CreateScreen() {
     setScanning(true);
     try {
       const Tesseract = await import('tesseract.js');
-      const imageUri = Platform.OS === 'web'
-        ? result.assets[0].uri
-        : `data:image/jpeg;base64,${result.assets[0].base64}`;
+      const imageUri = result.assets[0].uri;
       const { data } = await Tesseract.recognize(imageUri, 'eng');
       const text = data.text.trim();
       if (text) {
         setCustomWorkout((prev) => prev ? `${prev}\n${text}` : text);
       } else {
-        alert('No text detected. Try a clearer photo.');
+        showAlert('No Text', 'No text detected. Try a clearer photo.');
       }
     } catch {
-      alert('Failed to read text from image. Try again.');
+      showAlert('Scan Failed', 'Failed to read text from image. Try again.');
     } finally {
       setScanning(false);
     }

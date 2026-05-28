@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { movements, Movement } from '../../src/data/movements';
+import * as WebBrowser from 'expo-web-browser';
 import { colors, spacing } from '../../src/theme';
 
 const categoryLabels: Record<string, string> = {
@@ -132,9 +133,15 @@ export default function MovementsScreen() {
               />
             )}
             {activeVideo && Platform.OS !== 'web' && (
-              <Text style={styles.mobileVideoHint}>
-                Video playback opens in browser on mobile.
-              </Text>
+              <TouchableOpacity
+                style={{ backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginVertical: spacing.md }}
+                onPress={() => {
+                  setActiveVideo(null);
+                  WebBrowser.openBrowserAsync(`https://www.youtube.com/watch?v=${activeVideo.videoId}`);
+                }}
+              >
+                <Text style={{ color: colors.background, fontSize: 14, fontWeight: '800', letterSpacing: 2 }}>WATCH ON YOUTUBE</Text>
+              </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setActiveVideo(null)}>
               <Text style={styles.modalDoneBtnText}>CLOSE</Text>

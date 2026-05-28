@@ -19,6 +19,7 @@ import {
   WorkoutResult,
   deleteResult,
 } from '../../src/storage/workoutStorage';
+import * as WebBrowser from 'expo-web-browser';
 import { colors, spacing } from '../../src/theme';
 
 export default function WodDetailScreen() {
@@ -208,6 +209,17 @@ export default function WodDetailScreen() {
                 allow="autoplay; encrypted-media"
                 allowFullScreen
               />
+            )}
+            {activeVideo && Platform.OS !== 'web' && (
+              <TouchableOpacity
+                style={{ backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginVertical: spacing.md }}
+                onPress={() => {
+                  setActiveVideo(null);
+                  WebBrowser.openBrowserAsync(`https://www.youtube.com/watch?v=${activeVideo.videoId}`);
+                }}
+              >
+                <Text style={{ color: colors.background, fontSize: 14, fontWeight: '800', letterSpacing: 2 }}>WATCH ON YOUTUBE</Text>
+              </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setActiveVideo(null)}>
               <Text style={styles.modalDoneBtnText}>CLOSE</Text>

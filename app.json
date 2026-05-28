@@ -40,7 +40,14 @@
     "scheme": "prforgd",
     "plugins": [
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "PRForgd needs camera access to scan workouts.",
+          "photosPermission": "PRForgd needs photo access to scan workouts."
+        }
+      ]
     ],
     "extra": {
       "router": {},
