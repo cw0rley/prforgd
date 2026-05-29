@@ -13,6 +13,7 @@ import { getResults, formatTime, WorkoutResult } from '../src/storage/workoutSto
 import { heroWods } from '../src/data/heroWods';
 import { colors, spacing } from '../src/theme';
 import * as Clipboard from 'expo-clipboard';
+import { Toast, useToast } from '../src/components/Toast';
 
 function resultToCSVRow(r: WorkoutResult): string {
   const wod = heroWods.find((w) => w.id === r.wodId);
@@ -28,13 +29,14 @@ function resultToCSVRow(r: WorkoutResult): string {
 export default function ExportScreen() {
   const router = useRouter();
   const [exporting, setExporting] = useState(false);
+  const { toast, show: showToast, hide: hideToast } = useToast();
 
   async function handleExport() {
     setExporting(true);
     const results = await getResults();
 
     if (results.length === 0) {
-      Alert.alert('No Data', 'Log some workouts first!');
+      showToast('Log some workouts first!', 'info');
       setExporting(false);
       return;
     }
@@ -45,12 +47,9 @@ export default function ExportScreen() {
 
     try {
       await Clipboard.setStringAsync(csv);
-      Alert.alert(
-        'Copied!',
-        `${results.length} workout results copied to clipboard as CSV. Paste into a spreadsheet or text file.`
-      );
+      showToast(`${results.length} results copied as CSV!`, 'success');
     } catch {
-      Alert.alert('Export', 'Could not copy to clipboard. Try again.');
+      showToast('Could not copy to clipboard. Try again.', 'error');
     }
     setExporting(false);
   }
@@ -60,7 +59,7 @@ export default function ExportScreen() {
     const results = await getResults();
 
     if (results.length === 0) {
-      Alert.alert('No Data', 'Log some workouts first!');
+      showToast('Log some workouts first!', 'info');
       setExporting(false);
       return;
     }
@@ -72,12 +71,9 @@ export default function ExportScreen() {
 
     try {
       await Clipboard.setStringAsync(JSON.stringify(enriched, null, 2));
-      Alert.alert(
-        'Copied!',
-        `${results.length} workout results copied to clipboard as JSON.`
-      );
+      showToast(`${results.length} results copied as JSON!`, 'success');
     } catch {
-      Alert.alert('Export', 'Could not copy to clipboard. Try again.');
+      showToast('Could not copy to clipboard. Try again.', 'error');
     }
     setExporting(false);
   }
@@ -94,6 +90,7 @@ export default function ExportScreen() {
       }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>EXPORT YOUR DATA</Text>
+        <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
         <Text style={styles.subtitle}>
           Copy your workout history to clipboard, then paste into a spreadsheet, notes app, or anywhere you want.
         </Text>

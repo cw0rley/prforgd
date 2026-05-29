@@ -16,6 +16,7 @@ import { getUserEquipment } from '../../src/storage/equipmentStorage';
 import { saveGeneratedWod } from '../../src/storage/generatedWodStorage';
 import { generateWod, GeneratedWod, GeneratedWodType } from '../../src/data/wodGenerator';
 import { colors, spacing } from '../../src/theme';
+import { Toast, useToast } from '../../src/components/Toast';
 
 const wodTypeOptions: { key: GeneratedWodType; label: string }[] = [
   { key: 'for-time', label: 'For Time' },
@@ -44,6 +45,7 @@ export default function CreateScreen() {
 
   // Scan state
   const [scanning, setScanning] = useState(false);
+  const { toast, show: showToast, hide: hideToast } = useToast();
 
   useFocusEffect(
     useCallback(() => {
@@ -52,20 +54,15 @@ export default function CreateScreen() {
   );
 
   // --- Scan ---
-  function showAlert(title: string, msg: string) {
-    if (Platform.OS === 'web') window.alert(`${title}: ${msg}`);
-    else Alert.alert(title, msg);
-  }
-
   async function handleScan() {
     if (Platform.OS !== 'web') {
-      showAlert('Web Only', 'Scan is only available on the web version.');
+      showToast('Scan is only available on the web version.', 'info');
       return;
     }
 
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      showAlert('Permission Needed', 'Camera permission is needed to scan workouts.');
+      showToast('Camera permission is needed to scan workouts.', 'error');
       return;
     }
 
@@ -85,10 +82,10 @@ export default function CreateScreen() {
       if (text) {
         setCustomWorkout((prev) => prev ? `${prev}\n${text}` : text);
       } else {
-        showAlert('No Text', 'No text detected. Try a clearer photo.');
+        showToast('No text detected. Try a clearer photo.', 'error');
       }
     } catch {
-      showAlert('Scan Failed', 'Failed to read text from image. Try again.');
+      showToast('Failed to read text from image. Try again.', 'error');
     } finally {
       setScanning(false);
     }
@@ -139,6 +136,7 @@ export default function CreateScreen() {
     <>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>CREATE</Text>
+        <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
 
         {/* Tab toggle */}
         <View style={styles.tabRow}>

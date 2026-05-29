@@ -45,18 +45,19 @@ export default function WodDetailScreen() {
     setPr(p);
   }
 
-  function handleDelete(resultId: string) {
-    Alert.alert('Delete Result', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteResult(resultId);
-          loadData();
-        },
-      },
-    ]);
+  async function handleDelete(resultId: string) {
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm('Delete this result?')
+      : await new Promise<boolean>(resolve => {
+          Alert.alert('Delete Result', 'Are you sure?', [
+            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
+          ]);
+        });
+    if (confirmed) {
+      await deleteResult(resultId);
+      loadData();
+    }
   }
 
   if (!wod) {

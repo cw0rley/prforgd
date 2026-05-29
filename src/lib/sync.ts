@@ -2,6 +2,15 @@ import { supabase } from './supabase';
 import { WorkoutResult } from '../storage/workoutStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function ensureUUID(id: string): string {
+  if (UUID_REGEX.test(id)) return id;
+  // Convert non-UUID ids (e.g. Date.now() timestamps) to a deterministic UUID
+  const hex = id.padStart(32, '0').slice(-32);
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-4${hex.slice(13,16)}-a${hex.slice(17,20)}-${hex.slice(20,32)}`;
+}
+
 // --- Workout Results ---
 export async function syncResultsToCloud(userId: string) {
   const localData = await AsyncStorage.getItem('workout_results');
@@ -144,55 +153,109 @@ export async function fetchEquipmentFromCloud(userId: string): Promise<string[]>
 }
 
 // --- Full sync (merge by unique id, no data loss) ---
-export async function fullSync(userId: string) {
-  // --- Workout results: true merge by id ---
-  const localResultsData = await AsyncStorage.getItem('workout_results');
-  const localResults: WorkoutResult[] = localResultsData ? JSON.parse(localResultsData) : [];
-  const cloudResults = await fetchResultsFromCloud(userId);
+export interface SyncStats {
+  uploaded: number;
+  downloaded: number;
+  totalWorkouts: number;
+  totalFavorites: number;
+  error?: string;
+}
 
-  // Build merged map keyed by id — local-only results get uploaded, cloud-only stay
-  const mergedMap = new Map<string, WorkoutResult>();
-  for (const r of cloudResults) mergedMap.set(r.id, r);
-  for (const r of localResults) mergedMap.set(r.id, r); // local wins on conflict
+export async function fullSync(userId: string): Promise<SyncStats> {
+  const stats: SyncStats = { uploaded: 0, downloaded: 0, totalWorkouts: 0, totalFavorites: 0 };
 
-  // Upload any results not in cloud
-  const cloudIds = new Set(cloudResults.map((r) => r.id));
-  const localOnly = localResults.filter((r) => !cloudIds.has(r.id));
-  for (const r of localOnly) {
-    await saveResultToCloud(userId, r);
-  }
+  try {
+    // --- Workout results: true merge by id ---
+    const localResultsData = await AsyncStorage.getItem('workout_results');
+    let localResults: WorkoutResult[] = localResultsData ? JSON.parse(localResultsData) : [];
+    const cloudResults = await fetchResultsFromCloud(userId);
 
-  // Save merged set locally
-  const merged = Array.from(mergedMap.values());
-  await AsyncStorage.setItem('workout_results', JSON.stringify(merged));
-
-  // --- Merge favorites (union of both) ---
-  const localFavsData = await AsyncStorage.getItem('favorite_wods');
-  const localFavs: string[] = localFavsData ? JSON.parse(localFavsData) : [];
-  const cloudFavs = await fetchFavoritesFromCloud(userId);
-
-  const mergedFavs = Array.from(new Set([...localFavs, ...cloudFavs]));
-  await AsyncStorage.setItem('favorite_wods', JSON.stringify(mergedFavs));
-
-  // Upload any local favs not in cloud
-  const cloudFavSet = new Set(cloudFavs);
-  for (const wodId of localFavs) {
-    if (!cloudFavSet.has(wodId)) {
-      await toggleFavoriteCloud(userId, wodId, true);
+    // Fix any non-UUID ids before merging
+    let idsFixed = false;
+    localResults = localResults.map((r) => {
+      const fixedId = ensureUUID(r.id);
+      if (fixedId !== r.id) { idsFixed = true; return { ...r, id: fixedId }; }
+      return r;
+    });
+    if (idsFixed) {
+      await AsyncStorage.setItem('workout_results', JSON.stringify(localResults));
     }
+
+    // Build merged map keyed by id — local-only results get uploaded, cloud-only stay
+    const mergedMap = new Map<string, WorkoutResult>();
+    for (const r of cloudResults) mergedMap.set(r.id, r);
+    for (const r of localResults) mergedMap.set(r.id, r); // local wins on conflict
+
+    // Upload any results not in cloud
+    const cloudIds = new Set(cloudResults.map((r) => r.id));
+    const localOnly = localResults.filter((r) => !cloudIds.has(r.id));
+    const uploadErrors: string[] = [];
+    for (const r of localOnly) {
+      const { error } = await supabase.from('workout_results').upsert({
+        id: r.id,
+        user_id: userId,
+        wod_id: r.wodId,
+        wod_name: r.wodName || null,
+        wod_description: r.wodDescription || null,
+        date: r.date,
+        time_seconds: r.timeSeconds || null,
+        rounds: r.rounds || null,
+        reps: r.reps || null,
+        round_times: r.roundTimes || null,
+        notes: r.notes,
+        completed: r.completed !== false,
+        rx: r.rx,
+        is_pr: r.isPR,
+      });
+      if (error) uploadErrors.push(error.message);
+      else stats.uploaded++;
+    }
+    if (uploadErrors.length > 0) {
+      stats.error = `Upload failed (${uploadErrors.length}): ${uploadErrors[0]}`;
+    }
+
+    // Download = cloud results not in local
+    const localIds = new Set(localResults.map((r) => r.id));
+    stats.downloaded = cloudResults.filter((r) => !localIds.has(r.id)).length;
+
+    // Save merged set locally
+    const merged = Array.from(mergedMap.values());
+    await AsyncStorage.setItem('workout_results', JSON.stringify(merged));
+    stats.totalWorkouts = merged.length;
+
+    // --- Merge favorites (union of both) ---
+    const localFavsData = await AsyncStorage.getItem('favorite_wods');
+    const localFavs: string[] = localFavsData ? JSON.parse(localFavsData) : [];
+    const cloudFavs = await fetchFavoritesFromCloud(userId);
+
+    const mergedFavs = Array.from(new Set([...localFavs, ...cloudFavs]));
+    await AsyncStorage.setItem('favorite_wods', JSON.stringify(mergedFavs));
+    stats.totalFavorites = mergedFavs.length;
+
+    // Upload any local favs not in cloud
+    const cloudFavSet = new Set(cloudFavs);
+    for (const wodId of localFavs) {
+      if (!cloudFavSet.has(wodId)) {
+        await toggleFavoriteCloud(userId, wodId, true);
+      }
+    }
+
+    // --- Equipment: merge (upload local, then pull cloud as source of truth) ---
+    const localEquipData = await AsyncStorage.getItem('user_equipment');
+    const localEquipment: string[] = localEquipData ? JSON.parse(localEquipData) : [];
+
+    if (localEquipment.length > 0) {
+      await syncEquipmentToCloud(userId);
+    }
+
+    const cloudEquipment = await fetchEquipmentFromCloud(userId);
+    if (cloudEquipment.length > 0) {
+      const mergedEquip = Array.from(new Set([...localEquipment, ...cloudEquipment]));
+      await AsyncStorage.setItem('user_equipment', JSON.stringify(mergedEquip));
+    }
+  } catch (err: any) {
+    stats.error = err.message || 'Sync failed';
   }
 
-  // --- Equipment: merge (upload local, then pull cloud as source of truth) ---
-  const localEquipData = await AsyncStorage.getItem('user_equipment');
-  const localEquipment: string[] = localEquipData ? JSON.parse(localEquipData) : [];
-
-  if (localEquipment.length > 0) {
-    await syncEquipmentToCloud(userId);
-  }
-
-  const cloudEquipment = await fetchEquipmentFromCloud(userId);
-  if (cloudEquipment.length > 0) {
-    const merged = Array.from(new Set([...localEquipment, ...cloudEquipment]));
-    await AsyncStorage.setItem('user_equipment', JSON.stringify(merged));
-  }
+  return stats;
 }

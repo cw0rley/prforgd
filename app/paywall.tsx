@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, spacing } from '../src/theme';
+import { supabase } from '../src/lib/supabase';
 
-// TODO: Replace with your Stripe Payment Links or Checkout URLs
-const STRIPE_MONTHLY_URL = 'https://buy.stripe.com/YOUR_MONTHLY_LINK';
-const STRIPE_YEARLY_URL = 'https://buy.stripe.com/YOUR_YEARLY_LINK';
+const STRIPE_MONTHLY_URL = 'https://buy.stripe.com/3cI8wPdol7LL8q47Ua57W00';
+const STRIPE_YEARLY_URL = 'https://buy.stripe.com/eVqaEXespfed35Keiy57W01';
 
 export default function PaywallScreen() {
   const router = useRouter();
@@ -22,8 +22,17 @@ export default function PaywallScreen() {
 
   const needsAccount = reason === 'account_required';
 
-  function handleSubscribe() {
-    const url = selectedPlan === 'monthly' ? STRIPE_MONTHLY_URL : STRIPE_YEARLY_URL;
+  async function handleSubscribe() {
+    const baseUrl = selectedPlan === 'monthly' ? STRIPE_MONTHLY_URL : STRIPE_YEARLY_URL;
+    // Pass user ID and email to Stripe so webhook can match payment to user
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user?.id;
+    const email = data.session?.user?.email;
+    let url = baseUrl;
+    if (userId) {
+      url += `?client_reference_id=${userId}`;
+      if (email) url += `&prefilled_email=${encodeURIComponent(email)}`;
+    }
     if (Platform.OS === 'web') {
       window.open(url, '_blank');
     } else {
@@ -73,7 +82,7 @@ export default function PaywallScreen() {
                   <View style={styles.planTitleRow}>
                     <Text style={styles.planName}>Yearly</Text>
                     <View style={styles.saveBadge}>
-                      <Text style={styles.saveBadgeText}>SAVE 44%</Text>
+                      <Text style={styles.saveBadgeText}>SAVE 16%</Text>
                     </View>
                   </View>
                   <Text style={styles.planPrice}>$19.99 / year</Text>
@@ -93,8 +102,8 @@ export default function PaywallScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.planName}>Monthly</Text>
-                  <Text style={styles.planPrice}>$2.99 / month</Text>
-                  <Text style={styles.planSub}>$35.88/yr — flexible</Text>
+                  <Text style={styles.planPrice}>$1.99 / month</Text>
+                  <Text style={styles.planSub}>$23.88/yr — flexible</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -126,7 +135,7 @@ export default function PaywallScreen() {
         <View style={styles.freeBox}>
           <Text style={styles.freeTitle}>FREE TIER</Text>
           <Text style={styles.freeText}>
-            Browse all 160+ WODs, watch movement videos, use the WOD generator, and log up to 10 workouts — no account needed.
+            Browse all 200+ WODs, watch movement videos, use the WOD generator, and log up to 10 workouts — no account needed.
           </Text>
         </View>
       </ScrollView>

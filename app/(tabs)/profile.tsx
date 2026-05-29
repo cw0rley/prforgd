@@ -13,15 +13,11 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Session } from '@supabase/supabase-js';
 import { signUp, signIn, signOut, getSession, onAuthChange } from '../../src/lib/auth';
 import { supabase } from '../../src/lib/supabase';
-import { fullSync } from '../../src/lib/sync';
+import { fullSync, SyncStats } from '../../src/lib/sync';
 import { getResults } from '../../src/storage/workoutStorage';
 import { getFavorites } from '../../src/storage/favoritesStorage';
 import { colors, spacing } from '../../src/theme';
-
-function showAlert(title: string, msg: string) {
-  if (Platform.OS === 'web') window.alert(`${title}: ${msg}`);
-  else Alert.alert(title, msg);
-}
+import { Toast, useToast } from '../../src/components/Toast';
 
 export default function ProfileScreen() {
   const [session, setSession] = useState<Session | null>(null);
@@ -29,8 +25,10 @@ export default function ProfileScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<SyncStats | null>(null);
   const [tab, setTab] = useState<'login' | 'signup'>('login');
   const [stats, setStats] = useState({ workouts: 0, favorites: 0 });
+  const { toast, show: showToast, hide: hideToast } = useToast();
   const router = useRouter();
 
   useFocusEffect(
@@ -50,26 +48,26 @@ export default function ProfileScreen() {
 
   async function handleSignUp() {
     if (!email || !password) {
-      showAlert('Error', 'Enter email and password');
+      showToast('Enter email and password', 'error');
       return;
     }
     if (password.length < 6) {
-      showAlert('Error', 'Password must be at least 6 characters');
+      showToast('Password must be at least 6 characters', 'error');
       return;
     }
     setLoading(true);
     try {
       await signUp(email, password);
-      showAlert('Check your email', 'We sent you a confirmation link. Click it to activate your account.');
+      showToast('Check your email for a confirmation link.', 'success', 6000);
     } catch (err: any) {
-      showAlert('Error', err.message);
+      showToast(err.message, 'error');
     }
     setLoading(false);
   }
 
   async function handleSignIn() {
     if (!email || !password) {
-      showAlert('Error', 'Enter email and password');
+      showToast('Enter email and password', 'error');
       return;
     }
     setLoading(true);
@@ -78,13 +76,13 @@ export default function ProfileScreen() {
       setSession(s);
       if (s) {
         setSyncing(true);
-        await fullSync(s.user.id);
+        const result = await fullSync(s.user.id);
+        setSyncResult(result);
         setSyncing(false);
         loadStats();
-        showAlert('Signed in', 'Your data has been synced!');
       }
     } catch (err: any) {
-      showAlert('Error', err.message);
+      showToast(err.message, 'error');
     }
     setLoading(false);
   }
@@ -96,7 +94,7 @@ export default function ProfileScreen() {
       setEmail('');
       setPassword('');
     } catch (err: any) {
-      showAlert('Error', err.message);
+      showToast(err.message, 'error');
     }
   }
 
@@ -112,7 +110,7 @@ export default function ProfileScreen() {
       });
       if (error) throw error;
     } catch (err: any) {
-      showAlert('Error', err.message);
+      showToast(err.message, 'error');
     }
     setLoading(false);
   }
@@ -120,13 +118,10 @@ export default function ProfileScreen() {
   async function handleSync() {
     if (!session) return;
     setSyncing(true);
-    try {
-      await fullSync(session.user.id);
-      loadStats();
-      showAlert('Synced', 'Your data is up to date!');
-    } catch (err: any) {
-      showAlert('Sync Error', err.message);
-    }
+    setSyncResult(null);
+    const result = await fullSync(session.user.id);
+    setSyncResult(result);
+    loadStats();
     setSyncing(false);
   }
 
@@ -134,6 +129,7 @@ export default function ProfileScreen() {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>PROFILE</Text>
+        <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
 
         <View style={styles.profileCard}>
           <Text style={styles.emailText}>{session.user.email}</Text>
@@ -162,9 +158,28 @@ export default function ProfileScreen() {
             {syncing ? 'SYNCING...' : 'SYNC DATA'}
           </Text>
         </TouchableOpacity>
-        <Text style={styles.syncHint}>
-          Merges your data across devices. Workouts and favorites are combined — nothing gets overwritten. Equipment uses your latest local settings.
-        </Text>
+        {syncResult ? (
+          <View style={[styles.syncResultCard, syncResult.error ? styles.syncResultError : styles.syncResultSuccess]}>
+            {syncResult.error ? (
+              <Text style={styles.syncResultText}>Sync error: {syncResult.error}</Text>
+            ) : (
+              <>
+                <Text style={styles.syncResultText}>
+                  {syncResult.uploaded > 0 || syncResult.downloaded > 0
+                    ? `↑ ${syncResult.uploaded} uploaded · ↓ ${syncResult.downloaded} downloaded`
+                    : 'Already up to date'}
+                </Text>
+                <Text style={styles.syncResultDetail}>
+                  {syncResult.totalWorkouts} workouts · {syncResult.totalFavorites} favorites
+                </Text>
+              </>
+            )}
+          </View>
+        ) : (
+          <Text style={styles.syncHint}>
+            Merges your data across devices. Workouts and favorites are combined — nothing gets overwritten.
+          </Text>
+        )}
 
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
           <Text style={styles.signOutBtnText}>SIGN OUT</Text>
@@ -180,6 +195,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>PROFILE</Text>
+      <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
       <Text style={styles.subtitle}>
         Sign in to sync your workouts, PRs, and favorites across devices.
       </Text>
@@ -454,6 +470,33 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
     lineHeight: 18,
+  },
+  syncResultCard: {
+    borderRadius: 10,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+  },
+  syncResultSuccess: {
+    backgroundColor: 'rgba(127,255,59,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(127,255,59,0.3)',
+  },
+  syncResultError: {
+    backgroundColor: 'rgba(255,59,59,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,59,59,0.3)',
+  },
+  syncResultText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  syncResultDetail: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
   },
   signOutBtn: {
     backgroundColor: colors.card,

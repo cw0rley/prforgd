@@ -7,9 +7,8 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
-  Alert,
-  Platform,
 } from 'react-native';
+import { Toast, useToast } from '../../src/components/Toast';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useWakeLock } from '../../src/hooks/useWakeLock';
@@ -91,6 +90,7 @@ export default function LogWorkoutScreen() {
   const [rx, setRx] = useState(true);
   const [saving, setSaving] = useState(false);
   const [freeRemaining, setFreeRemaining] = useState<number | null>(null);
+  const { toast, show: showToast, hide: hideToast } = useToast();
 
   useEffect(() => {
     import('../../src/lib/subscription').then(({ getFreeRemaining }) =>
@@ -169,8 +169,7 @@ export default function LogWorkoutScreen() {
 
     if (isAmrap) {
       if (!rounds) {
-        if (Platform.OS === 'web') window.alert('Please enter rounds completed.');
-        else Alert.alert('Enter rounds', 'Please enter rounds completed.');
+        showToast('Please enter rounds completed.', 'error');
         return;
       }
       roundsNum = parseInt(rounds || '0');
@@ -179,8 +178,7 @@ export default function LogWorkoutScreen() {
 
     if (isTimerMode && !isAmrap) {
       if (!timerStarted || elapsedSeconds === 0) {
-        if (Platform.OS === 'web') window.alert('Start the timer first.');
-          else Alert.alert('No time recorded', 'Start the timer first.');
+        showToast('Start the timer first.', 'error');
         return;
       }
       if (timerRunning) pauseTimer();
@@ -188,8 +186,7 @@ export default function LogWorkoutScreen() {
     } else if (!isAmrap) {
       // Log mode — manual time
       if (!minutes && !seconds) {
-        if (Platform.OS === 'web') window.alert('Please enter your completion time.');
-        else Alert.alert('Enter a time', 'Please enter your completion time.');
+        showToast('Please enter your completion time.', 'error');
         return;
       }
       timeSeconds = (parseInt(minutes || '0') * 60) + parseInt(seconds || '0');
@@ -223,7 +220,7 @@ export default function LogWorkoutScreen() {
     const workoutDate = isTimerMode ? new Date().toISOString() : new Date(dateStr + 'T12:00:00').toISOString();
 
     const result: WorkoutResult = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       wodId: isCustom ? 'custom-' + Date.now() : (heroWod?.id || 'custom'),
       wodName: isCustom ? (customWod?.name || 'Custom WOD') : undefined,
       wodDescription: isCustom ? customWod?.workout : undefined,
@@ -242,11 +239,8 @@ export default function LogWorkoutScreen() {
     setSaving(false);
 
     if (isPR) {
-      if (Platform.OS === 'web') {
-        window.alert('NEW PR! You set a new personal record!');
-      } else {
-        Alert.alert('NEW PR!', 'Congratulations! You set a new personal record!');
-      }
+      showToast('NEW PR! You set a new personal record!', 'success', 5000);
+      await new Promise(r => setTimeout(r, 2000));
     }
     if (isCustom) {
       router.replace('/(tabs)/history');
@@ -289,6 +283,7 @@ export default function LogWorkoutScreen() {
         ),
       }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
         <Text style={styles.wodName}>{wod.name}</Text>
 
         <View style={styles.badgeRow}>

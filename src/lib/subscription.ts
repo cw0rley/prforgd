@@ -93,7 +93,7 @@ export async function isGrandfathered(userId: string): Promise<boolean> {
 
   // First time checking — if they have >10 workouts, grandfather them
   const results = await getResults();
-  if (results.length > FREE_LIMIT) {
+  if (results.length > 10) {
     await supabase.from('subscriptions').upsert({
       user_id: userId,
       status: 'grandfathered',

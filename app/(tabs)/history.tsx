@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,18 +36,19 @@ export default function HistoryScreen() {
     setResults(all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   }
 
-  function handleDelete(resultId: string) {
-    Alert.alert('Delete Result', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteResult(resultId);
-          loadResults();
-        },
-      },
-    ]);
+  async function handleDelete(resultId: string) {
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm('Delete this result?')
+      : await new Promise<boolean>(resolve => {
+          Alert.alert('Delete Result', 'Are you sure?', [
+            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
+          ]);
+        });
+    if (confirmed) {
+      await deleteResult(resultId);
+      loadResults();
+    }
   }
 
   async function doAgain(r: WorkoutResult, mode: 'timer' | 'log') {
