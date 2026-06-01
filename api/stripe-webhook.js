@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const Stripe = require('stripe');
+const { sendSubscriptionConfirmation, sendCancellationEmail } = require('./_lib/emails');
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const supabase = createClient(
@@ -57,6 +58,16 @@ module.exports = async function handler(req, res) {
     }, { onConflict: 'user_id' });
 
     if (error) console.error('Supabase upsert error:', error);
+
+    // Send subscription confirmation email
+    const customerEmail = session.customer_details?.email || session.customer_email;
+    if (customerEmail) {
+      try {
+        await sendSubscriptionConfirmation(customerEmail, plan);
+      } catch (emailErr) {
+        console.error('Failed to send subscription email:', emailErr);
+      }
+    }
   }
 
   if (event.type === 'customer.subscription.updated') {
@@ -90,6 +101,16 @@ module.exports = async function handler(req, res) {
       .eq('stripe_subscription_id', subscriptionId);
 
     if (error) console.error('Supabase update error:', error);
+
+    // Send cancellation email
+    try {
+      const customer = await stripe.customers.retrieve(subscription.customer);
+      if (customer.email) {
+        await sendCancellationEmail(customer.email);
+      }
+    } catch (emailErr) {
+      console.error('Failed to send cancellation email:', emailErr);
+    }
   }
 
   return res.status(200).json({ received: true });
