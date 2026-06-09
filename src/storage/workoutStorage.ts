@@ -24,6 +24,22 @@ export interface WorkoutResult {
 }
 
 const RESULTS_KEY = 'workout_results';
+// Tombstones: ids of results deleted locally, so sync won't resurrect them
+// and the cloud delete can be retried if we were offline at delete time.
+const DELETED_KEY = 'workout_results_deleted';
+
+export async function getDeletedIds(): Promise<string[]> {
+  const data = await AsyncStorage.getItem(DELETED_KEY);
+  return data ? JSON.parse(data) : [];
+}
+
+async function addDeletedId(id: string): Promise<void> {
+  const ids = await getDeletedIds();
+  if (!ids.includes(id)) {
+    ids.push(id);
+    await AsyncStorage.setItem(DELETED_KEY, JSON.stringify(ids));
+  }
+}
 
 // Helper to get current user id for cloud sync
 async function getUserId(): Promise<string | null> {
@@ -105,6 +121,21 @@ export async function deleteResult(resultId: string): Promise<void> {
   const results = await getResults();
   const filtered = results.filter((r) => r.id !== resultId);
   await AsyncStorage.setItem(RESULTS_KEY, JSON.stringify(filtered));
+
+  // Record a tombstone so a later sync won't bring it back.
+  await addDeletedId(resultId);
+
+  // Delete from cloud too if logged in. If this fails (e.g. offline), the
+  // tombstone remains and fullSync will retry the cloud delete.
+  const userId = await getUserId();
+  if (userId) {
+    try {
+      const { deleteResultFromCloud } = require('../lib/sync');
+      await deleteResultFromCloud(resultId);
+    } catch (e) {
+      console.error('Cloud delete failed:', e);
+    }
+  }
 }
 
 export function formatTime(totalSeconds: number): string {

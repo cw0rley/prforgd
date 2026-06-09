@@ -181,10 +181,22 @@ export async function fullSync(userId: string): Promise<SyncStats> {
       await AsyncStorage.setItem('workout_results', JSON.stringify(localResults));
     }
 
-    // Build merged map keyed by id — local-only results get uploaded, cloud-only stay
+    // Tombstones: ids deleted locally. Remove them from the cloud (retry in case
+    // the delete happened offline) and never merge them back into local storage.
+    const deletedData = await AsyncStorage.getItem('workout_results_deleted');
+    const deletedIds: string[] = deletedData ? JSON.parse(deletedData) : [];
+    const deletedSet = new Set(deletedIds);
+    for (const id of deletedIds) {
+      if (cloudResults.some((r) => r.id === id)) {
+        await supabase.from('workout_results').delete().eq('id', id);
+      }
+    }
+
+    // Build merged map keyed by id — local-only results get uploaded, cloud-only stay.
+    // Skip tombstoned ids so deleted results are not resurrected.
     const mergedMap = new Map<string, WorkoutResult>();
-    for (const r of cloudResults) mergedMap.set(r.id, r);
-    for (const r of localResults) mergedMap.set(r.id, r); // local wins on conflict
+    for (const r of cloudResults) if (!deletedSet.has(r.id)) mergedMap.set(r.id, r);
+    for (const r of localResults) if (!deletedSet.has(r.id)) mergedMap.set(r.id, r); // local wins on conflict
 
     // Upload any results not in cloud
     const cloudIds = new Set(cloudResults.map((r) => r.id));
@@ -214,9 +226,9 @@ export async function fullSync(userId: string): Promise<SyncStats> {
       stats.error = `Upload failed (${uploadErrors.length}): ${uploadErrors[0]}`;
     }
 
-    // Download = cloud results not in local
+    // Download = cloud results not in local (excluding tombstoned/deleted ids)
     const localIds = new Set(localResults.map((r) => r.id));
-    stats.downloaded = cloudResults.filter((r) => !localIds.has(r.id)).length;
+    stats.downloaded = cloudResults.filter((r) => !localIds.has(r.id) && !deletedSet.has(r.id)).length;
 
     // Save merged set locally
     const merged = Array.from(mergedMap.values());
