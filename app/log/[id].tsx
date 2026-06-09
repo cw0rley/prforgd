@@ -524,7 +524,7 @@ export default function LogWorkoutScreen() {
                   disabled={lapFlash}
                 >
                   <Text style={[styles.bottomBtnOutlineGreenText, lapFlash && styles.bottomBtnFilledText]}>
-                    {lapFlash ? '✓' : currentRound >= totalRounds ? 'FINISH' : `R${currentRound} DONE`}
+                    {lapFlash ? '✓ LOGGED' : currentRound >= totalRounds ? 'FINISH' : `R${currentRound} DONE`}
                   </Text>
                 </TouchableOpacity>
               )}
