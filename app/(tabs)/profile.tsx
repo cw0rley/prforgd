@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { Session } from '@supabase/supabase-js';
 import { signUp, signIn, signOut, getSession, onAuthChange } from '../../src/lib/auth';
 import { supabase } from '../../src/lib/supabase';
@@ -111,6 +112,34 @@ export default function ProfileScreen() {
       if (error) throw error;
     } catch (err: any) {
       showToast(err.message, 'error');
+    }
+    setLoading(false);
+  }
+
+  // Native Sign in with Apple (iOS only). Uses the system sheet and exchanges
+  // the identity token with Supabase — required for App Store approval.
+  async function handleAppleSignIn() {
+    setLoading(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        throw new Error('No identity token returned from Apple.');
+      }
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      // User canceling the native sheet is not an error worth surfacing.
+      if (err.code !== 'ERR_REQUEST_CANCELED') {
+        showToast(err.message, 'error');
+      }
     }
     setLoading(false);
   }
@@ -261,13 +290,23 @@ export default function ProfileScreen() {
         <Text style={styles.googleBtnText}>CONTINUE WITH GOOGLE</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.appleBtn}
-        onPress={() => handleSocialSignIn('apple')}
-        disabled={loading}
-      >
-        <Text style={styles.appleBtnText}>CONTINUE WITH APPLE</Text>
-      </TouchableOpacity>
+      {Platform.OS === 'ios' ? (
+        <AppleAuthentication.AppleAuthenticationButton
+          buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+          cornerRadius={8}
+          style={styles.appleBtn}
+          onPress={handleAppleSignIn}
+        />
+      ) : (
+        <TouchableOpacity
+          style={styles.appleBtn}
+          onPress={() => handleSocialSignIn('apple')}
+          disabled={loading}
+        >
+          <Text style={styles.appleBtnText}>CONTINUE WITH APPLE</Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity style={styles.helpBtn} onPress={() => router.push('/help')}>
         <Text style={styles.helpBtnText}>USER MANUAL</Text>
@@ -371,7 +410,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.md,
+    width: '100%',
+    height: 52,
   },
   appleBtnText: {
     color: '#fff',

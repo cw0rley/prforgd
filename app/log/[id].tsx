@@ -11,8 +11,9 @@ import {
 import { Toast, useToast } from '../../src/components/Toast';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
+import { randomUUID } from 'expo-crypto';
 import { useWakeLock } from '../../src/hooks/useWakeLock';
-import { heroWods } from '../../src/data/heroWods';
+import { getWorkouts } from '../../src/data/workoutData';
 import { getGeneratedWod } from '../../src/storage/generatedWodStorage';
 import {
   saveResult,
@@ -32,7 +33,7 @@ export default function LogWorkoutScreen() {
   const router = useRouter();
   const isCustom = id === 'custom';
 
-  const heroWod = !isCustom ? heroWods.find((w) => w.id === id) : null;
+  const heroWod = !isCustom ? getWorkouts().find((w) => w.id === id) : null;
 
   const [customWod, setCustomWod] = useState<{
     name: string;
@@ -63,6 +64,7 @@ export default function LogWorkoutScreen() {
   const isTimerMode = mode === 'timer';
   const isAmrap = wod?.type === 'amrap';
   const hasRounds = wod?.type === 'rounds-for-time';
+  const isForTime = wod?.type === 'for-time';
   const totalRounds = (heroWod?.totalRounds || customWod?.totalRounds) || 0;
 
   // Timer state
@@ -75,6 +77,11 @@ export default function LogWorkoutScreen() {
   // Round tracking (timer mode)
   const [roundTimes, setRoundTimes] = useState<RoundTime[]>([]);
   const [currentRound, setCurrentRound] = useState(1);
+
+  // Lap button feedback + debounce (prevents double-logging on rapid taps)
+  const [lapFlash, setLapFlash] = useState(false);
+  const lapLockRef = useRef(false);
+  const lapFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Manual entry fields
   const [minutes, setMinutes] = useState('');
@@ -131,7 +138,20 @@ export default function LogWorkoutScreen() {
     pauseTimer();
   }
 
+  // Brief visual confirmation that a lap/split registered, and a short lock
+  // so a rapid double-tap doesn't log two near-zero splits.
+  function triggerLapFeedback() {
+    setLapFlash(true);
+    lapLockRef.current = true;
+    if (lapFlashTimerRef.current) clearTimeout(lapFlashTimerRef.current);
+    lapFlashTimerRef.current = setTimeout(() => {
+      setLapFlash(false);
+      lapLockRef.current = false;
+    }, 600);
+  }
+
   function lapRound() {
+    if (lapLockRef.current) return;
     const lastCumulative = roundTimes.length > 0
       ? roundTimes[roundTimes.length - 1].cumulativeSeconds
       : 0;
@@ -144,12 +164,30 @@ export default function LogWorkoutScreen() {
     };
 
     setRoundTimes((prev) => [...prev, newRound]);
+    triggerLapFeedback();
 
     if (hasRounds && currentRound >= totalRounds) {
       pauseTimer();
     } else {
       setCurrentRound((prev) => prev + 1);
     }
+  }
+
+  function lapSplit() {
+    if (lapLockRef.current) return;
+    const lastCumulative = roundTimes.length > 0
+      ? roundTimes[roundTimes.length - 1].cumulativeSeconds
+      : 0;
+    const splitSeconds = elapsedSeconds - lastCumulative;
+
+    const newSplit: RoundTime = {
+      round: roundTimes.length + 1,
+      splitSeconds,
+      cumulativeSeconds: elapsedSeconds,
+    };
+
+    setRoundTimes((prev) => [...prev, newSplit]);
+    triggerLapFeedback();
   }
 
   function resetTimer() {
@@ -220,7 +258,7 @@ export default function LogWorkoutScreen() {
     const workoutDate = isTimerMode ? new Date().toISOString() : new Date(dateStr + 'T12:00:00').toISOString();
 
     const result: WorkoutResult = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       wodId: isCustom ? 'custom-' + Date.now() : (heroWod?.id || 'custom'),
       wodName: isCustom ? (customWod?.name || 'Custom WOD') : undefined,
       wodDescription: isCustom ? customWod?.workout : undefined,
@@ -235,7 +273,13 @@ export default function LogWorkoutScreen() {
       isPR,
     };
 
-    await saveResult(result);
+    try {
+      await saveResult(result);
+    } catch (err: any) {
+      setSaving(false);
+      showToast(err?.message || 'Could not save workout. Please try again.', 'error');
+      return;
+    }
     setSaving(false);
 
     if (isPR) {
@@ -269,7 +313,7 @@ export default function LogWorkoutScreen() {
 
   const isFinished = hasRounds && roundTimes.length >= totalRounds;
   const showPostWorkout = isTimerMode
-    ? (timerStarted && !timerRunning)
+    ? (isAmrap || (timerStarted && !timerRunning))
     : true;
 
   return (
@@ -309,10 +353,10 @@ export default function LogWorkoutScreen() {
 
             {roundTimes.length > 0 && (
               <View style={styles.roundsList}>
-                <Text style={styles.label}>ROUND SPLITS</Text>
+                <Text style={styles.label}>{isForTime ? 'SPLITS' : 'ROUND SPLITS'}</Text>
                 {[...roundTimes].reverse().map((rt) => (
                   <View key={rt.round} style={styles.roundRow}>
-                    <Text style={styles.roundLabel}>Round {rt.round}</Text>
+                    <Text style={styles.roundLabel}>{isForTime ? `Split ${rt.round}` : `Round ${rt.round}`}</Text>
                     <View style={styles.roundTimesCol}>
                       <Text style={styles.roundSplit}>{formatTimeFull(rt.splitSeconds)}</Text>
                       <Text style={styles.roundCumulative}>
@@ -449,53 +493,69 @@ export default function LogWorkoutScreen() {
 
       {/* Fixed bottom bar with all action buttons */}
       <View style={styles.bottomBar}>
-        {isTimerMode && !isAmrap && (
-          <>
-            {!timerStarted && !isFinished && (
-              <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={startTimer}>
-                <Text style={styles.bottomBtnOutlineGreenText}>START</Text>
-              </TouchableOpacity>
-            )}
-
-            {timerStarted && !timerRunning && !isFinished && (
-              <TouchableOpacity style={styles.bottomBtnOutlineBlue} onPress={startTimer}>
-                <Text style={styles.bottomBtnOutlineBlueText}>RESUME</Text>
-              </TouchableOpacity>
-            )}
-
-            {timerRunning && (
-              <TouchableOpacity style={styles.bottomBtnOutlineYellow} onPress={pauseTimer}>
-                <Text style={styles.bottomBtnOutlineYellowText}>PAUSE</Text>
-              </TouchableOpacity>
-            )}
-
-            {timerRunning && hasRounds && !isFinished && (
-              <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={lapRound}>
-                <Text style={styles.bottomBtnOutlineGreenText}>
-                  {currentRound >= totalRounds ? 'FINISH' : `RD ${currentRound} DONE`}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {timerRunning && (
-              <TouchableOpacity style={styles.bottomBtnOutlineRed} onPress={stopTimer}>
-                <Text style={styles.bottomBtnOutlineRedText}>STOP</Text>
-              </TouchableOpacity>
-            )}
-
-            {timerStarted && !timerRunning && (
-              <TouchableOpacity style={styles.bottomBtnOutlineOrange} onPress={resetTimer}>
-                <Text style={styles.bottomBtnOutlineOrangeText}>RESET</Text>
-              </TouchableOpacity>
-            )}
-          </>
+        {showPostWorkout && freeRemaining !== null && freeRemaining > 0 && freeRemaining <= 10 && (
+          <Text style={styles.freeCounter}>{freeRemaining} free workout{freeRemaining === 1 ? '' : 's'} remaining</Text>
         )}
+        <View style={styles.bottomBarButtons}>
+          {isTimerMode && !isAmrap && (
+            <>
+              {!timerStarted && !isFinished && (
+                <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={startTimer}>
+                  <Text style={styles.bottomBtnOutlineGreenText}>START</Text>
+                </TouchableOpacity>
+              )}
 
-        {showPostWorkout && (
-          <View style={{ flex: 1 }}>
-            {freeRemaining !== null && freeRemaining > 0 && freeRemaining <= 10 && (
-              <Text style={styles.freeCounter}>{freeRemaining} free workout{freeRemaining === 1 ? '' : 's'} remaining</Text>
-            )}
+              {timerStarted && !timerRunning && !isFinished && (
+                <TouchableOpacity style={styles.bottomBtnSmallOutlineBlue} onPress={startTimer}>
+                  <Text style={styles.bottomBtnOutlineBlueText}>RESUME</Text>
+                </TouchableOpacity>
+              )}
+
+              {timerRunning && (
+                <TouchableOpacity style={styles.bottomBtnOutlineYellow} onPress={pauseTimer}>
+                  <Text style={styles.bottomBtnOutlineYellowText}>PAUSE</Text>
+                </TouchableOpacity>
+              )}
+
+              {timerRunning && hasRounds && !isFinished && (
+                <TouchableOpacity
+                  style={[styles.bottomBtnOutlineGreen, lapFlash && styles.bottomBtnGreenFilled]}
+                  onPress={lapRound}
+                  disabled={lapFlash}
+                >
+                  <Text style={[styles.bottomBtnOutlineGreenText, lapFlash && styles.bottomBtnFilledText]}>
+                    {lapFlash ? '✓ LOGGED' : currentRound >= totalRounds ? 'FINISH' : `R${currentRound} DONE`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {timerRunning && isForTime && (
+                <TouchableOpacity
+                  style={[styles.bottomBtnOutlineBlue, lapFlash && styles.bottomBtnBlueFilled]}
+                  onPress={lapSplit}
+                  disabled={lapFlash}
+                >
+                  <Text style={[styles.bottomBtnOutlineBlueText, lapFlash && styles.bottomBtnFilledText]}>
+                    {lapFlash ? '✓ LOGGED' : 'SPLIT'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {timerRunning && (
+                <TouchableOpacity style={styles.bottomBtnOutlineRed} onPress={stopTimer}>
+                  <Text style={styles.bottomBtnOutlineRedText}>STOP</Text>
+                </TouchableOpacity>
+              )}
+
+              {timerStarted && !timerRunning && (
+                <TouchableOpacity style={styles.bottomBtnSmallOutlineOrange} onPress={resetTimer}>
+                  <Text style={styles.bottomBtnOutlineOrangeText}>RESET</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+
+          {showPostWorkout && (
             <TouchableOpacity
               style={[styles.bottomBtnPrimary, saving && { opacity: 0.5 }]}
               onPress={handleSave}
@@ -505,12 +565,12 @@ export default function LogWorkoutScreen() {
                 {saving ? 'SAVING...' : 'SAVE'}
               </Text>
             </TouchableOpacity>
-          </View>
-        )}
+          )}
 
-        {!isTimerMode && !showPostWorkout && (
-          <View />
-        )}
+          {!isTimerMode && !showPostWorkout && (
+            <View />
+          )}
+        </View>
       </View>
     </>
   );
@@ -577,14 +637,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
     paddingBottom: 40,
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.cardBorder,
+  },
+  bottomBarButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   bottomBtnGreen: {
     flex: 1,
@@ -636,11 +698,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4DA6FF',
   },
+  bottomBtnSmallOutlineBlue: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4DA6FF',
+    backgroundColor: '#001A2B',
+  },
   bottomBtnOutlineBlueText: {
     color: '#4DA6FF',
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 2,
+  },
+  // Pressed/confirmation state for lap & split buttons
+  bottomBtnBlueFilled: {
+    backgroundColor: '#4DA6FF',
+    borderColor: '#4DA6FF',
+  },
+  bottomBtnGreenFilled: {
+    backgroundColor: '#00C853',
+    borderColor: '#00C853',
+  },
+  bottomBtnFilledText: {
+    color: '#001228',
   },
   bottomBtnOutlineOrange: {
     flex: 1,
@@ -650,6 +733,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#FF8C00',
+  },
+  bottomBtnSmallOutlineOrange: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FF8C00',
+    backgroundColor: '#2B1500',
   },
   bottomBtnOutlineOrangeText: {
     color: '#FF8C00',
@@ -788,13 +880,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   rxBadge: {
-    backgroundColor: colors.success,
-    color: colors.background,
+    backgroundColor: '#002B12',
+    color: colors.success,
     fontSize: 14,
     fontWeight: '800',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.success,
     overflow: 'hidden',
   },
   scaledBadge: {
