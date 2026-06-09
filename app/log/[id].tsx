@@ -151,7 +151,6 @@ export default function LogWorkoutScreen() {
   }
 
   function lapRound() {
-    if (lapLockRef.current) return;
     const lastCumulative = roundTimes.length > 0
       ? roundTimes[roundTimes.length - 1].cumulativeSeconds
       : 0;
@@ -164,7 +163,6 @@ export default function LogWorkoutScreen() {
     };
 
     setRoundTimes((prev) => [...prev, newRound]);
-    triggerLapFeedback();
 
     if (hasRounds && currentRound >= totalRounds) {
       pauseTimer();
@@ -518,13 +516,9 @@ export default function LogWorkoutScreen() {
               )}
 
               {timerRunning && hasRounds && !isFinished && (
-                <TouchableOpacity
-                  style={[styles.bottomBtnOutlineGreen, lapFlash && styles.bottomBtnGreenFilled]}
-                  onPress={lapRound}
-                  disabled={lapFlash}
-                >
-                  <Text style={[styles.bottomBtnOutlineGreenText, lapFlash && styles.bottomBtnFilledText]}>
-                    {lapFlash ? '✓ LOGGED' : currentRound >= totalRounds ? 'FINISH' : `R${currentRound} DONE`}
+                <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={lapRound}>
+                  <Text style={styles.bottomBtnOutlineGreenText}>
+                    {currentRound >= totalRounds ? 'FINISH' : `R${currentRound} DONE`}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -717,10 +711,6 @@ const styles = StyleSheet.create({
   bottomBtnBlueFilled: {
     backgroundColor: '#4DA6FF',
     borderColor: '#4DA6FF',
-  },
-  bottomBtnGreenFilled: {
-    backgroundColor: '#00C853',
-    borderColor: '#00C853',
   },
   bottomBtnFilledText: {
     color: '#001228',
