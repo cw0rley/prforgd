@@ -524,7 +524,7 @@ export default function LogWorkoutScreen() {
                   disabled={lapFlash}
                 >
                   <Text style={[styles.bottomBtnOutlineGreenText, lapFlash && styles.bottomBtnFilledText]}>
-                    {lapFlash ? '✓ LOGGED' : currentRound >= totalRounds ? 'FINISH' : `R${currentRound} DONE`}
+                    {lapFlash ? '✓' : currentRound >= totalRounds ? 'FINISH' : `R${currentRound} DONE`}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -536,7 +536,7 @@ export default function LogWorkoutScreen() {
                   disabled={lapFlash}
                 >
                   <Text style={[styles.bottomBtnOutlineBlueText, lapFlash && styles.bottomBtnFilledText]}>
-                    {lapFlash ? '✓ LOGGED' : 'SPLIT'}
+                    {lapFlash ? '✓' : 'SPLIT'}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -562,7 +562,7 @@ export default function LogWorkoutScreen() {
               disabled={saving}
             >
               <Text style={styles.bottomBtnPrimaryText}>
-                {saving ? 'SAVING...' : 'SAVE'}
+                {saving ? '✓' : 'SAVE'}
               </Text>
             </TouchableOpacity>
           )}
