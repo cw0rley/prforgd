@@ -43,6 +43,7 @@ export async function fetchResultsFromCloud(userId: string): Promise<WorkoutResu
     .from('workout_results')
     .select('*')
     .eq('user_id', userId)
+    .is('deleted_at', null)
     .order('date', { ascending: false });
 
   if (error) {
@@ -88,7 +89,12 @@ export async function saveResultToCloud(userId: string, result: WorkoutResult) {
 }
 
 export async function deleteResultFromCloud(resultId: string) {
-  const { error } = await supabase.from('workout_results').delete().eq('id', resultId);
+  // Soft delete: set deleted_at so the deletion propagates to other devices
+  // (they filter out / remove rows with deleted_at set on their next sync).
+  const { error } = await supabase
+    .from('workout_results')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', resultId);
   if (error) console.error('Delete result from cloud error:', error);
 }
 
@@ -181,26 +187,45 @@ export async function fullSync(userId: string): Promise<SyncStats> {
       await AsyncStorage.setItem('workout_results', JSON.stringify(localResults));
     }
 
-    // Tombstones: ids deleted locally. Remove them from the cloud (retry in case
-    // the delete happened offline) and never merge them back into local storage.
-    const deletedData = await AsyncStorage.getItem('workout_results_deleted');
-    const deletedIds: string[] = deletedData ? JSON.parse(deletedData) : [];
-    const deletedSet = new Set(deletedIds);
-    for (const id of deletedIds) {
-      if (cloudResults.some((r) => r.id === id)) {
-        await supabase.from('workout_results').delete().eq('id', id);
+    // --- Deletions: client tombstones + server-side soft-deletes ---
+    // Local tombstones cover deletes made offline; server soft-deletes (deleted_at)
+    // propagate deletes made on other devices. cloudResults already excludes
+    // soft-deleted rows (fetch filters deleted_at is null).
+    const tombstoneData = await AsyncStorage.getItem('workout_results_deleted');
+    const localTombstones: string[] = tombstoneData ? JSON.parse(tombstoneData) : [];
+
+    const { data: deletedRows } = await supabase
+      .from('workout_results')
+      .select('id')
+      .eq('user_id', userId)
+      .not('deleted_at', 'is', null);
+    const serverDeletedIds: string[] = (deletedRows || []).map((r: any) => r.id);
+    const serverDeletedSet = new Set(serverDeletedIds);
+
+    // Soft-delete any locally-tombstoned rows not yet marked deleted in the cloud
+    // (retry path for deletes that happened while offline).
+    for (const id of localTombstones) {
+      if (!serverDeletedSet.has(id)) {
+        await supabase
+          .from('workout_results')
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('id', id);
       }
     }
 
+    // Union of all known deletions; remember it locally so this device won't resurrect them.
+    const deletedSet = new Set<string>([...localTombstones, ...serverDeletedIds]);
+    await AsyncStorage.setItem('workout_results_deleted', JSON.stringify(Array.from(deletedSet)));
+
     // Build merged map keyed by id — local-only results get uploaded, cloud-only stay.
-    // Skip tombstoned ids so deleted results are not resurrected.
+    // Skip deleted ids so deleted results are not resurrected (locally or cross-device).
     const mergedMap = new Map<string, WorkoutResult>();
     for (const r of cloudResults) if (!deletedSet.has(r.id)) mergedMap.set(r.id, r);
     for (const r of localResults) if (!deletedSet.has(r.id)) mergedMap.set(r.id, r); // local wins on conflict
 
     // Upload any results not in cloud
     const cloudIds = new Set(cloudResults.map((r) => r.id));
-    const localOnly = localResults.filter((r) => !cloudIds.has(r.id));
+    const localOnly = localResults.filter((r) => !cloudIds.has(r.id) && !deletedSet.has(r.id));
     const uploadErrors: string[] = [];
     for (const r of localOnly) {
       const { error } = await supabase.from('workout_results').upsert({
