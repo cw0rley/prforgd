@@ -10,8 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect, Stack } from 'expo-router';
-import { heroWods } from '../../src/data/heroWods';
-import { findMovement } from '../../src/data/movements';
+import { getWorkouts, findMovement } from '../../src/data/workoutData';
 import {
   getResultsForWod,
   getPRForWod,
@@ -25,7 +24,7 @@ import { colors, spacing } from '../../src/theme';
 export default function WodDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const wod = heroWods.find((w) => w.id === id);
+  const wod = getWorkouts().find((w) => w.id === id);
   const [results, setResults] = useState<WorkoutResult[]>([]);
   const [pr, setPr] = useState<WorkoutResult | null>(null);
   const [activeVideo, setActiveVideo] = useState<{ name: string; videoId: string } | null>(null);
@@ -417,13 +416,15 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   rxBadge: {
-    backgroundColor: colors.success,
-    color: colors.text,
+    backgroundColor: '#002B12',
+    color: colors.success,
     fontSize: 12,
     fontWeight: '800',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.success,
     overflow: 'hidden',
   },
   scaledBadge: {

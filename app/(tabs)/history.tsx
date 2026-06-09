@@ -14,15 +14,17 @@ import { saveGeneratedWod } from '../../src/storage/generatedWodStorage';
 import {
   getResults,
   deleteResult,
+  toggleFavorite,
   formatTime,
   WorkoutResult,
 } from '../../src/storage/workoutStorage';
-import { heroWods } from '../../src/data/heroWods';
+import { getWorkouts } from '../../src/data/workoutData';
 import { colors, spacing } from '../../src/theme';
 
 export default function HistoryScreen() {
   const [results, setResults] = useState<WorkoutResult[]>([]);
-  const [filter, setFilter] = useState<'all' | 'pr' | 'rx' | 'scaled'>('all');
+  const [filter, setFilter] = useState<'all' | 'fav' | 'pr' | 'rx' | 'scaled'>('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const router = useRouter();
 
   useFocusEffect(
@@ -68,7 +70,7 @@ export default function HistoryScreen() {
   function getWodName(r: WorkoutResult): string {
     if (r.wodName) return r.wodName;
     if (r.wodId.startsWith('custom-')) return 'Custom WOD';
-    return heroWods.find((w) => w.id === r.wodId)?.name || r.wodId;
+    return getWorkouts().find((w) => w.id === r.wodId)?.name || r.wodId;
   }
 
   return (
@@ -90,8 +92,14 @@ export default function HistoryScreen() {
             <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>ALL</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={[styles.filterBtn, filter === 'fav' && styles.filterBtnActive]}
+            onPress={() => setFilter(filter === 'fav' ? 'all' : 'fav')}
+          >
+            <Text style={[styles.filterText, filter === 'fav' && styles.filterTextActive]}>{filter === 'fav' ? '★' : '☆'} Favs</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.filterBtn, filter === 'pr' && styles.filterBtnActive]}
-            onPress={() => setFilter('pr')}
+            onPress={() => setFilter(filter === 'pr' ? 'all' : 'pr')}
           >
             <Text style={[styles.filterText, filter === 'pr' && styles.filterTextActive]}>PRs</Text>
           </TouchableOpacity>
@@ -114,6 +122,7 @@ export default function HistoryScreen() {
         )}
 
         {results.filter((r) => {
+          if (filter === 'fav') return r.favorite;
           if (filter === 'pr') return r.isPR;
           if (filter === 'rx') return r.rx;
           if (filter === 'scaled') return !r.rx;
@@ -122,11 +131,25 @@ export default function HistoryScreen() {
           <TouchableOpacity
             key={r.id}
             style={styles.card}
-            onPress={() => doAgain(r, 'timer')}
+            onPress={() => setExpandedId(expandedId === r.id ? null : r.id)}
             onLongPress={() => handleDelete(r.id)}
           >
             <View style={styles.cardHeader}>
-              <Text style={styles.wodName}>{getWodName(r)}</Text>
+              <View style={styles.cardHeaderLeft}>
+                <TouchableOpacity
+                  onPress={async (e) => {
+                    e.stopPropagation();
+                    await toggleFavorite(r.id);
+                    loadResults();
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={r.favorite ? styles.favStar : styles.favStarEmpty}>
+                    {r.favorite ? '★' : '☆'}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.wodName}>{getWodName(r)}</Text>
+              </View>
               <Text style={styles.date}>
                 {new Date(r.date).toLocaleDateString()}
               </Text>
@@ -136,9 +159,9 @@ export default function HistoryScreen() {
               {r.timeSeconds !== undefined && (
                 <Text style={styles.score}>{formatTime(r.timeSeconds)}</Text>
               )}
-              {r.rounds !== undefined && (
+              {r.rounds !== undefined && r.rounds > 0 && (
                 <Text style={styles.score}>
-                  {r.rounds} rds{r.reps ? ` + ${r.reps}` : ''}
+                  {r.rounds} rounds{r.reps ? ` + ${r.reps} reps` : ''}
                 </Text>
               )}
               <View style={styles.badges}>
@@ -148,17 +171,59 @@ export default function HistoryScreen() {
               </View>
             </View>
 
-            {r.roundTimes && r.roundTimes.length > 0 && (
+            {expandedId === r.id && (
+              <View style={styles.expandedSection}>
+                {/* Workout description */}
+                {(() => {
+                  const wod = getWorkouts().find((w) => w.id === r.wodId);
+                  const workout = wod?.workout || r.wodDescription;
+                  return workout ? (
+                    <View style={styles.expandedWorkoutBox}>
+                      <Text style={styles.expandedWorkoutText}>{workout}</Text>
+                    </View>
+                  ) : null;
+                })()}
+
+                {/* Round splits */}
+                {r.roundTimes && r.roundTimes.length > 0 && (
+                  <View style={styles.roundSplits}>
+                    {r.roundTimes.map((rt) => (
+                      <Text key={rt.round} style={styles.roundSplitText}>
+                        R{rt.round}: {formatTime(rt.splitSeconds)}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+
+                {/* Notes */}
+                {r.notes ? <Text style={styles.notes}>{r.notes}</Text> : null}
+
+                {/* Action buttons */}
+                <View style={styles.doAgainRow}>
+                  <TouchableOpacity style={styles.doAgainBtn} onPress={() => doAgain(r, 'timer')}>
+                    <Text style={styles.doAgainText}>DO AGAIN</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.doAgainBtnLog} onPress={() => doAgain(r, 'log')}>
+                    <Text style={styles.doAgainTextLog}>LOG</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(r.id)}>
+                    <Text style={styles.deleteText}>DELETE</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {expandedId !== r.id && r.roundTimes && r.roundTimes.length > 0 && (
               <View style={styles.roundSplits}>
                 {r.roundTimes.map((rt) => (
                   <Text key={rt.round} style={styles.roundSplitText}>
-                    Rd {rt.round}: {formatTime(rt.splitSeconds)}
+                    R{rt.round}: {formatTime(rt.splitSeconds)}
                   </Text>
                 ))}
               </View>
             )}
 
-            {r.notes ? <Text style={styles.notes}>{r.notes}</Text> : null}
+            {expandedId !== r.id && r.notes ? <Text style={styles.notes}>{r.notes}</Text> : null}
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -248,6 +313,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
+  cardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  favStar: {
+    fontSize: 20,
+    color: colors.prGold,
+  },
+  favStarEmpty: {
+    fontSize: 20,
+    color: colors.textMuted,
+  },
   wodName: {
     fontSize: 20,
     fontWeight: '800',
@@ -272,13 +351,15 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   rxBadge: {
-    backgroundColor: colors.success,
-    color: colors.text,
+    backgroundColor: '#002B12',
+    color: colors.success,
     fontSize: 12,
     fontWeight: '800',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.success,
     overflow: 'hidden',
   },
   scaledBadge: {
@@ -322,6 +403,23 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontStyle: 'italic',
   },
+  expandedSection: {
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
+    paddingTop: spacing.sm,
+  },
+  expandedWorkoutBox: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  expandedWorkoutText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 22,
+  },
   doAgainRow: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -349,6 +447,20 @@ const styles = StyleSheet.create({
   },
   doAgainTextLog: {
     color: colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  deleteBtn: {
+    backgroundColor: colors.card,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.danger,
+  },
+  deleteText: {
+    color: colors.danger,
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1,

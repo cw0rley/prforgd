@@ -1,5 +1,5 @@
-import { movements } from './movements';
-import { movementEquipment } from './equipment';
+import { getMovements, getMovementEquipment } from './workoutData';
+import type { Movement } from './movements';
 
 export type GeneratedWodType = 'for-time' | 'amrap' | 'emom' | 'rounds-for-time';
 
@@ -47,8 +47,9 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function getAvailableMovements(userEquipment: string[]): typeof movements {
-  return movements.filter((m) => {
+function getAvailableMovements(userEquipment: string[]): Movement[] {
+  const movementEquipment = getMovementEquipment();
+  return getMovements().filter((m) => {
     if (!m.videoUrl) return false; // only use movements with videos
     const required = movementEquipment[m.name];
     if (required === undefined) return false; // unlisted = exclude
@@ -57,11 +58,11 @@ function getAvailableMovements(userEquipment: string[]): typeof movements {
   });
 }
 
-function pickMovements(available: typeof movements, count: number): typeof movements {
+function pickMovements(available: Movement[], count: number): Movement[] {
   const shuffled = [...available].sort(() => Math.random() - 0.5);
   // Try to get diverse categories
   const categories = new Set<string>();
-  const picked: typeof movements = [];
+  const picked: Movement[] = [];
 
   for (const m of shuffled) {
     if (picked.length >= count) break;

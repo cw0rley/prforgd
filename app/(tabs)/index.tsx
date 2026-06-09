@@ -10,11 +10,11 @@ import {
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { heroWods, HeroWod } from '../../src/data/heroWods';
+import { HeroWod } from '../../src/data/heroWods';
+import { getWorkouts, canDoWod } from '../../src/data/workoutData';
 import { getPRForWod, formatTime, WorkoutResult } from '../../src/storage/workoutStorage';
 import { getUserEquipment } from '../../src/storage/equipmentStorage';
 import { getFavorites, toggleFavorite } from '../../src/storage/favoritesStorage';
-import { canDoWod } from '../../src/data/equipment';
 import { colors, spacing } from '../../src/theme';
 
 const categoryLabels: Record<string, string> = {
@@ -49,7 +49,7 @@ export default function HomeScreen() {
 
   async function loadPRs() {
     const prMap: Record<string, WorkoutResult | null> = {};
-    for (const wod of heroWods) {
+    for (const wod of getWorkouts()) {
       prMap[wod.id] = await getPRForWod(wod.id);
     }
     setPrs(prMap);
@@ -62,7 +62,7 @@ export default function HomeScreen() {
     );
   }
 
-  const filtered = heroWods
+  const filtered = getWorkouts()
     .filter((w) => {
       const matchesSearch =
         w.name.toLowerCase().includes(search.toLowerCase()) ||

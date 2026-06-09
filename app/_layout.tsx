@@ -6,10 +6,16 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useWakeLock } from '../src/hooks/useWakeLock';
 import { colors } from '../src/theme';
 import { supabase } from '../src/lib/supabase';
+import { initWorkoutData } from '../src/data/workoutData';
 
 export default function RootLayout() {
   useKeepAwake();
   useWakeLock();
+
+  // Initialize workout data from Supabase (with cache fallback)
+  useEffect(() => {
+    initWorkoutData();
+  }, []);
 
   // Handle OAuth callback - pick up session from URL hash after Google redirect
   useEffect(() => {

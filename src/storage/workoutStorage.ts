@@ -20,6 +20,7 @@ export interface WorkoutResult {
   completed: boolean; // finished the full workout?
   rx: boolean; // did it at prescribed weights/movements?
   isPR: boolean;
+  favorite?: boolean;
 }
 
 const RESULTS_KEY = 'workout_results';
@@ -89,6 +90,15 @@ export async function getPRForWod(wodId: string): Promise<WorkoutResult | null> 
   }
 
   return null;
+}
+
+export async function toggleFavorite(resultId: string): Promise<boolean> {
+  const results = await getResults();
+  const result = results.find((r) => r.id === resultId);
+  if (!result) return false;
+  result.favorite = !result.favorite;
+  await AsyncStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+  return result.favorite;
 }
 
 export async function deleteResult(resultId: string): Promise<void> {

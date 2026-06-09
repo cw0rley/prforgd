@@ -162,7 +162,7 @@ export const movements: Movement[] = [
 ];
 
 // Direct name-to-movement overrides for WOD movement names that don't match exactly
-const movementAliases: Record<string, string> = {
+export const movementAliases: Record<string, string> = {
   'Pull-Up': 'Kipping Pull-Up',
   'Push-Up': 'Push-Up',
   'Sit-Up': 'AbMat Sit-Up',

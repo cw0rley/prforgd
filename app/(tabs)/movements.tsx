@@ -10,7 +10,8 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { movements, Movement } from '../../src/data/movements';
+import { Movement } from '../../src/data/movements';
+import { getMovements } from '../../src/data/workoutData';
 import * as WebBrowser from 'expo-web-browser';
 import { colors, spacing } from '../../src/theme';
 
@@ -34,7 +35,7 @@ export default function MovementsScreen() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeVideo, setActiveVideo] = useState<{ name: string; videoId: string } | null>(null);
 
-  const filtered = movements
+  const filtered = getMovements()
     .filter((m) => {
       const matchesSearch = !search || m.name.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = !activeCategory || m.category === activeCategory;

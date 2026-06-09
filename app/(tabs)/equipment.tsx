@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { allEquipment } from '../../src/data/equipment';
+import { getEquipment } from '../../src/data/workoutData';
 import { getUserEquipment, saveUserEquipment } from '../../src/storage/equipmentStorage';
 import { colors, spacing } from '../../src/theme';
 
@@ -32,7 +32,7 @@ export default function EquipmentScreen() {
   }
 
   function selectAll() {
-    const all = allEquipment.map((e) => e.id);
+    const all = getEquipment().map((e) => e.id);
     setSelected(all);
     saveUserEquipment(all);
   }
@@ -56,7 +56,7 @@ export default function EquipmentScreen() {
           </TouchableOpacity>
         </View>
 
-        {allEquipment.map((item) => {
+        {getEquipment().map((item) => {
           const isSelected = selected.includes(item.id);
           return (
             <TouchableOpacity

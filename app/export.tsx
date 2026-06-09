@@ -10,13 +10,13 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { getResults, formatTime, WorkoutResult } from '../src/storage/workoutStorage';
-import { heroWods } from '../src/data/heroWods';
+import { getWorkouts } from '../src/data/workoutData';
 import { colors, spacing } from '../src/theme';
 import * as Clipboard from 'expo-clipboard';
 import { Toast, useToast } from '../src/components/Toast';
 
 function resultToCSVRow(r: WorkoutResult): string {
-  const wod = heroWods.find((w) => w.id === r.wodId);
+  const wod = getWorkouts().find((w) => w.id === r.wodId);
   const score = r.timeSeconds !== undefined
     ? formatTime(r.timeSeconds)
     : `${r.rounds || 0} rds + ${r.reps || 0} reps`;
@@ -66,7 +66,7 @@ export default function ExportScreen() {
 
     const enriched = results.map((r) => ({
       ...r,
-      wodName: heroWods.find((w) => w.id === r.wodId)?.name || r.wodId,
+      wodName: getWorkouts().find((w) => w.id === r.wodId)?.name || r.wodId,
     }));
 
     try {
