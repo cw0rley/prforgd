@@ -8,7 +8,10 @@ import {
   StyleSheet,
   Platform,
   Alert,
+  Image,
+  Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Session } from '@supabase/supabase-js';
@@ -20,10 +23,42 @@ import { getFavorites } from '../../src/storage/favoritesStorage';
 import { colors, spacing } from '../../src/theme';
 import { Toast, useToast } from '../../src/components/Toast';
 
+// Web-only button with hover feedback (react-native-web exposes `hovered`
+// in the Pressable style callback; native ignores it).
+function HoverButton({
+  style,
+  hoverStyle,
+  onPress,
+  disabled,
+  children,
+}: {
+  style: any;
+  hoverStyle?: any;
+  onPress: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={(state: any) => [
+        style,
+        state.hovered && hoverStyle,
+        state.pressed && { opacity: 0.85 },
+        disabled && { opacity: 0.5 },
+      ]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 export default function ProfileScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [focusedInput, setFocusedInput] = useState<'email' | 'password' | null>(null);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncStats | null>(null);
@@ -217,6 +252,111 @@ export default function ProfileScreen() {
         <TouchableOpacity style={styles.helpBtn} onPress={() => router.push('/help')}>
           <Text style={styles.helpBtnText}>USER MANUAL</Text>
         </TouchableOpacity>
+      </ScrollView>
+    );
+  }
+
+  // Web-only login: centered max-width card on the navy background with
+  // hover/focus states and Enter-to-submit. Native keeps the layout below.
+  if (Platform.OS === 'web') {
+    const submit = tab === 'login' ? handleSignIn : handleSignUp;
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={web.page}>
+        <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
+
+        <View style={web.card}>
+          <View style={web.titleRow}>
+            <Image source={require('../../brand-kit/png/icon-256.png')} style={web.logo} />
+            <View style={web.titleCol}>
+              <Text style={web.cardTitle}>
+                {tab === 'login' ? 'Welcome back' : 'Create your account'}
+              </Text>
+              <Text style={web.cardSubtitle}>
+                Sync your workouts, PRs, and favorites across devices.
+              </Text>
+            </View>
+          </View>
+
+          <View style={web.tabRow}>
+            {(['login', 'signup'] as const).map((t) => (
+              <Pressable key={t} onPress={() => setTab(t)} style={[web.tab, tab === t && web.tabActive]}>
+                <Text style={[web.tabText, tab === t && web.tabTextActive]}>
+                  {t === 'login' ? 'SIGN IN' : 'SIGN UP'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <TextInput
+            style={[web.input, focusedInput === 'email' && web.inputFocused]}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Email"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            onFocus={() => setFocusedInput('email')}
+            onBlur={() => setFocusedInput(null)}
+            onSubmitEditing={submit}
+          />
+          <TextInput
+            style={[web.input, focusedInput === 'password' && web.inputFocused]}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password"
+            placeholderTextColor={colors.textMuted}
+            secureTextEntry
+            onFocus={() => setFocusedInput('password')}
+            onBlur={() => setFocusedInput(null)}
+            onSubmitEditing={submit}
+          />
+
+          <HoverButton
+            style={web.primaryBtn}
+            hoverStyle={web.primaryBtnHover}
+            onPress={submit}
+            disabled={loading}
+          >
+            <Text style={web.primaryBtnText}>
+              {loading ? 'LOADING...' : tab === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
+            </Text>
+          </HoverButton>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <View style={web.socialRow}>
+            <HoverButton
+              style={web.googleBtn}
+              hoverStyle={web.googleBtnHover}
+              onPress={() => handleSocialSignIn('google')}
+              disabled={loading}
+            >
+              <Ionicons name="logo-google" size={16} color="#333" />
+              <Text style={web.googleBtnText}>GOOGLE</Text>
+            </HoverButton>
+            <HoverButton
+              style={web.appleBtn}
+              hoverStyle={web.appleBtnHover}
+              onPress={() => handleSocialSignIn('apple')}
+              disabled={loading}
+            >
+              <Ionicons name="logo-apple" size={16} color="#fff" />
+              <Text style={web.appleBtnText}>APPLE</Text>
+            </HoverButton>
+          </View>
+        </View>
+
+        <HoverButton
+          style={web.helpLink}
+          hoverStyle={web.helpLinkHover}
+          onPress={() => router.push('/help')}
+        >
+          <Text style={web.helpLinkText}>USER MANUAL</Text>
+        </HoverButton>
       </ScrollView>
     );
   }
@@ -565,6 +705,166 @@ const styles = StyleSheet.create({
   helpBtnText: {
     color: colors.textSecondary,
     fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 2,
+  },
+});
+
+// Web-only login styles (centered card layout).
+const web = StyleSheet.create({
+  page: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+    paddingBottom: spacing.xl * 2,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  titleCol: {
+    flex: 1,
+  },
+  logo: {
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    padding: spacing.xl,
+    // Subtle lift off the navy background.
+    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.45)',
+  } as any,
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: colors.text,
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    marginBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    marginBottom: -1,
+  },
+  tabActive: {
+    borderBottomColor: colors.primary,
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 1,
+  },
+  tabTextActive: {
+    color: colors.primary,
+  },
+  input: {
+    backgroundColor: colors.background,
+    color: colors.text,
+    borderRadius: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
+    fontSize: 15,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    outlineStyle: 'none',
+  } as any,
+  inputFocused: {
+    borderColor: colors.primary,
+  },
+  primaryBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  primaryBtnHover: {
+    backgroundColor: colors.primaryDark,
+  },
+  primaryBtnText: {
+    color: colors.background,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
+  socialRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  googleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleBtnHover: {
+    backgroundColor: '#e8e8e8',
+  },
+  googleBtnText: {
+    color: '#333',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  appleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    backgroundColor: '#000',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appleBtnHover: {
+    backgroundColor: '#222',
+  },
+  appleBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  helpLink: {
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  helpLinkHover: {
+    opacity: 0.7,
+  },
+  helpLinkText: {
+    color: colors.textSecondary,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 2,
   },
