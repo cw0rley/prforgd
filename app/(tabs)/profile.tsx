@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as WebBrowser from 'expo-web-browser';
 import { Session } from '@supabase/supabase-js';
 import { signUp, signIn, signOut, deleteAccount, getSession, onAuthChange } from '../../src/lib/auth';
 import { supabase } from '../../src/lib/supabase';
@@ -22,6 +23,10 @@ import { getResults } from '../../src/storage/workoutStorage';
 import { getFavorites } from '../../src/storage/favoritesStorage';
 import { colors, spacing } from '../../src/theme';
 import { Toast, useToast } from '../../src/components/Toast';
+
+// Completes any pending auth session if the app was reopened via the
+// OAuth redirect (no-op otherwise). Must run at module scope.
+WebBrowser.maybeCompleteAuthSession();
 
 // Web-only button with hover feedback (react-native-web exposes `hovered`
 // in the Pressable style callback; native ignores it).
@@ -138,14 +143,39 @@ export default function ProfileScreen() {
   async function handleSocialSignIn(provider: 'google' | 'facebook' | 'apple') {
     setLoading(true);
     try {
-      const redirectTo = Platform.OS === 'web'
-        ? window.location.origin + '/(tabs)/profile'
-        : 'prforgd://auth/callback';
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: { redirectTo },
-      });
-      if (error) throw error;
+      if (Platform.OS === 'web') {
+        // On web the browser redirects to the provider and back automatically.
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: { redirectTo: window.location.origin + '/(tabs)/profile' },
+        });
+        if (error) throw error;
+      } else {
+        // On native, signInWithOAuth only returns the provider URL — we have
+        // to open it ourselves and pull the tokens out of the callback URL.
+        const redirectTo = 'prforgd://auth/callback';
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: { redirectTo, skipBrowserRedirect: true },
+        });
+        if (error) throw error;
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+        if (result.type === 'success' && result.url) {
+          const fragment = result.url.split('#')[1] ?? '';
+          const params = new URLSearchParams(fragment);
+          const access_token = params.get('access_token');
+          const refresh_token = params.get('refresh_token');
+          if (!access_token || !refresh_token) {
+            throw new Error('Sign-in failed. Please try again.');
+          }
+          const { error: sessionErr } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+          if (sessionErr) throw sessionErr;
+        }
+        // result.type === 'cancel'/'dismiss' means the user backed out — not an error.
+      }
     } catch (err: any) {
       showToast(err.message, 'error');
     }

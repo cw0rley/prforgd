@@ -41,7 +41,9 @@ export default function RootLayout() {
           headerTintColor: colors.primary,
           headerTitleStyle: { color: colors.text, fontWeight: 'bold' },
           contentStyle: { backgroundColor: colors.background },
-          headerStatusBarHeight: 0,
+          // Web headers don't need status-bar spacing; on native the default
+          // spacing keeps headers below the notch.
+          ...(Platform.OS === 'web' ? ({ headerStatusBarHeight: 0 } as any) : null),
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

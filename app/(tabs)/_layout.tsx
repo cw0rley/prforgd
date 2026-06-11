@@ -1,10 +1,12 @@
 import { Tabs } from 'expo-router';
 import { Platform, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/theme';
 
 export default function TabLayout() {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isDesktop = width > 768;
   const iconSize = isDesktop ? 26 : 22;
   const labelSize = isDesktop ? 14 : 10;
@@ -15,6 +17,12 @@ export default function TabLayout() {
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.primary,
         headerTitleStyle: { color: colors.text, fontWeight: 'bold' },
+        // Keep tab screens below the notch/status bar on native.
+        // Web gets this via CSS env(safe-area-inset-top) in post-export.js.
+        sceneStyle: {
+          paddingTop: Platform.OS === 'web' ? 0 : insets.top,
+          backgroundColor: colors.background,
+        },
         tabBarStyle: {
           backgroundColor: colors.background,
           borderTopColor: colors.cardBorder,

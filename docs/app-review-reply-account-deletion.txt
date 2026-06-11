@@ -1,0 +1,41 @@
+Reply to App Review — Guideline 5.1.1(v) (Submission 2b43b142-d445-4490-820c-afe871304c88)
+==========================================================================================
+
+Hello,
+
+Thank you for the feedback. We have added full in-app account deletion in
+version 1.0.1 (build 7), which has been submitted for review.
+
+How it works:
+
+1. Sign in (or create an account) in the app.
+2. Go to the "Me" tab.
+3. Tap "DELETE ACCOUNT" at the bottom of the screen.
+4. A confirmation dialog explains that this permanently deletes the account
+   and all synced data and cannot be undone.
+5. On confirmation, the account is permanently deleted: any active
+   subscription is cancelled, all of the user's data (workouts, favorites,
+   equipment settings, subscription records) is removed from our servers,
+   and the authentication account itself is deleted. The user is signed out
+   immediately and can no longer sign in with the deleted credentials.
+
+This is a true permanent deletion, not a deactivation. The entire flow is
+completed inside the app — no website visit, phone call, or email to
+customer service is required. Our privacy policy (viewable in the app) has
+been updated to describe the in-app deletion option.
+
+A screen recording captured on a physical device demonstrating account
+creation, navigating to the deletion option, and the complete deletion flow
+from initiation to confirmation has been added to the App Review notes.
+
+Thank you for your time.
+
+----------------------------------------------------------------------------
+CHECKLIST BEFORE SENDING (not part of the reply):
+[ ] Build 7 (1.0.1) submitted via EAS and showing in App Store Connect
+[ ] Screen recording made on a PHYSICAL iPhone/iPad showing:
+      - creating a new account (or signing in with the demo account)
+      - Me tab -> DELETE ACCOUNT -> confirmation dialog -> Delete
+      - signed-out state afterwards
+[ ] Recording link/file added to App Review Information -> Notes
+[ ] Select the new build for the 1.0.1 version in App Store Connect
