@@ -82,7 +82,7 @@ export default function PrivacyScreen() {
         </Section>
 
         <Section title="Data Retention">
-          <P>Your data is retained as long as your account is active. You can delete your account and associated data by contacting us at support@prforgd.com.</P>
+          <P>Your data is retained as long as your account is active. You can permanently delete your account and all associated data at any time from the Me tab using the Delete Account option. You can also contact us at support@prforgd.com.</P>
         </Section>
 
         <Section title="Your Rights">

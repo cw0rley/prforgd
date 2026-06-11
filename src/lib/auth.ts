@@ -18,6 +18,26 @@ export async function signOut() {
   if (error) throw error;
 }
 
+// Permanently deletes the user's account and all synced data via the
+// server-side endpoint (requires service-role key, so it can't run here).
+export async function deleteAccount() {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error('Not signed in');
+
+  const res = await fetch('https://www.prforgd.com/api/delete-account', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({} as any));
+    throw new Error(body.error || 'Account deletion failed. Please try again.');
+  }
+
+  // Server already deleted the user — just clear the local session.
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+}
+
 export async function getSession(): Promise<Session | null> {
   const { data } = await supabase.auth.getSession();
   return data.session;

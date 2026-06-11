@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Session } from '@supabase/supabase-js';
-import { signUp, signIn, signOut, getSession, onAuthChange } from '../../src/lib/auth';
+import { signUp, signIn, signOut, deleteAccount, getSession, onAuthChange } from '../../src/lib/auth';
 import { supabase } from '../../src/lib/supabase';
 import { fullSync, SyncStats } from '../../src/lib/sync';
 import { getResults } from '../../src/storage/workoutStorage';
@@ -60,6 +60,7 @@ export default function ProfileScreen() {
   const [password, setPassword] = useState('');
   const [focusedInput, setFocusedInput] = useState<'email' | 'password' | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncStats | null>(null);
   const [tab, setTab] = useState<'login' | 'signup'>('login');
@@ -179,6 +180,38 @@ export default function ProfileScreen() {
     setLoading(false);
   }
 
+  // Account deletion (App Store Guideline 5.1.1(v)): confirmation step, then
+  // the server endpoint cancels any subscription, wipes synced data, and
+  // deletes the auth user. Workouts saved on this device are not affected.
+  function confirmDeleteAccount() {
+    const message =
+      'This permanently deletes your account and all synced data (workouts, favorites, and any subscription). This cannot be undone.';
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Delete your account?\n\n${message}`)) {
+        handleDeleteAccount();
+      }
+    } else {
+      Alert.alert('Delete Account?', message, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: handleDeleteAccount },
+      ]);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      setSession(null);
+      setEmail('');
+      setPassword('');
+      showToast('Your account has been deleted.', 'success', 6000);
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    }
+    setDeleting(false);
+  }
+
   async function handleSync() {
     if (!session) return;
     setSyncing(true);
@@ -251,6 +284,16 @@ export default function ProfileScreen() {
 
         <TouchableOpacity style={styles.helpBtn} onPress={() => router.push('/help')}>
           <Text style={styles.helpBtnText}>USER MANUAL</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.deleteAccountBtn, deleting && { opacity: 0.5 }]}
+          onPress={confirmDeleteAccount}
+          disabled={deleting}
+        >
+          <Text style={styles.deleteAccountBtnText}>
+            {deleting ? 'DELETING ACCOUNT...' : 'DELETE ACCOUNT'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     );
@@ -705,6 +748,17 @@ const styles = StyleSheet.create({
   helpBtnText: {
     color: colors.textSecondary,
     fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 2,
+  },
+  deleteAccountBtn: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  deleteAccountBtnText: {
+    color: colors.danger,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 2,
   },
