@@ -4,7 +4,7 @@ Reply to App Review — Guideline 5.1.1(v) (Submission 2b43b142-d445-4490-820c-a
 Hello,
 
 Thank you for the feedback. We have added full in-app account deletion in
-version 1.0.1 (build 7), which has been submitted for review.
+version 1.0.1 (build 8), which has been submitted for review.
 
 How it works:
 
@@ -32,7 +32,7 @@ Thank you for your time.
 
 ----------------------------------------------------------------------------
 CHECKLIST BEFORE SENDING (not part of the reply):
-[ ] Build 7 (1.0.1) submitted via EAS and showing in App Store Connect
+[ ] Build 8 (1.0.1) submitted via EAS and showing in App Store Connect
 [ ] Screen recording made on a PHYSICAL iPhone/iPad showing:
       - creating a new account (or signing in with the demo account)
       - Me tab -> DELETE ACCOUNT -> confirmation dialog -> Delete
