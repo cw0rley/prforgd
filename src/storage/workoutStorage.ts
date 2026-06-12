@@ -1,4 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  KEYS,
+  readJSON,
+  writeJSON,
+  markDirty,
+} from '../lib/localStore';
 
 export interface RoundTime {
   round: number;
@@ -21,57 +26,41 @@ export interface WorkoutResult {
   rx: boolean; // did it at prescribed weights/movements?
   isPR: boolean;
   favorite?: boolean;
+  updatedAt?: string; // ISO; drives last-write-wins during sync
 }
 
-const RESULTS_KEY = 'workout_results';
-// Tombstones: ids of results deleted locally, so sync won't resurrect them
-// and the cloud delete can be retried if we were offline at delete time.
-const DELETED_KEY = 'workout_results_deleted';
+// Fire-and-forget cloud sync after a local mutation (no-op when logged out).
+function triggerSync(): void {
+  try {
+    const { requestSync } = require('../lib/sync');
+    requestSync();
+  } catch {
+    // sync module unavailable — local write already succeeded
+  }
+}
 
 export async function getDeletedIds(): Promise<string[]> {
-  const data = await AsyncStorage.getItem(DELETED_KEY);
-  return data ? JSON.parse(data) : [];
+  return readJSON<string[]>(KEYS.resultsDeleted, []);
 }
 
 async function addDeletedId(id: string): Promise<void> {
   const ids = await getDeletedIds();
   if (!ids.includes(id)) {
     ids.push(id);
-    await AsyncStorage.setItem(DELETED_KEY, JSON.stringify(ids));
-  }
-}
-
-// Helper to get current user id for cloud sync
-async function getUserId(): Promise<string | null> {
-  try {
-    const { supabase } = require('../lib/supabase');
-    const { data } = await supabase.auth.getSession();
-    return data.session?.user?.id || null;
-  } catch {
-    return null;
+    await writeJSON(KEYS.resultsDeleted, ids);
   }
 }
 
 export async function getResults(): Promise<WorkoutResult[]> {
-  const data = await AsyncStorage.getItem(RESULTS_KEY);
-  return data ? JSON.parse(data) : [];
+  return readJSON<WorkoutResult[]>(KEYS.results, []);
 }
 
 export async function saveResult(result: WorkoutResult): Promise<void> {
   const results = await getResults();
-  results.push(result);
-  await AsyncStorage.setItem(RESULTS_KEY, JSON.stringify(results));
-
-  // Auto-sync to cloud if logged in
-  const userId = await getUserId();
-  if (userId) {
-    try {
-      const { saveResultToCloud } = require('../lib/sync');
-      await saveResultToCloud(userId, result);
-    } catch (e) {
-      console.error('Cloud sync failed:', e);
-    }
-  }
+  results.push({ ...result, updatedAt: new Date().toISOString() });
+  await writeJSON(KEYS.results, results);
+  await markDirty();
+  triggerSync();
 }
 
 export async function getResultsForWod(wodId: string): Promise<WorkoutResult[]> {
@@ -113,29 +102,21 @@ export async function toggleFavorite(resultId: string): Promise<boolean> {
   const result = results.find((r) => r.id === resultId);
   if (!result) return false;
   result.favorite = !result.favorite;
-  await AsyncStorage.setItem(RESULTS_KEY, JSON.stringify(results));
-  return result.favorite;
+  await writeJSON(KEYS.results, results);
+  return result.favorite; // result-level flag is local-only (no cloud column)
 }
 
 export async function deleteResult(resultId: string): Promise<void> {
   const results = await getResults();
   const filtered = results.filter((r) => r.id !== resultId);
-  await AsyncStorage.setItem(RESULTS_KEY, JSON.stringify(filtered));
+  await writeJSON(KEYS.results, filtered);
 
-  // Record a tombstone so a later sync won't bring it back.
+  // Record a tombstone so a later sync won't bring it back, then reconcile
+  // (which soft-deletes it in the cloud). If offline, the tombstone persists
+  // and the next sync retries the cloud delete.
   await addDeletedId(resultId);
-
-  // Delete from cloud too if logged in. If this fails (e.g. offline), the
-  // tombstone remains and fullSync will retry the cloud delete.
-  const userId = await getUserId();
-  if (userId) {
-    try {
-      const { deleteResultFromCloud } = require('../lib/sync');
-      await deleteResultFromCloud(resultId);
-    } catch (e) {
-      console.error('Cloud delete failed:', e);
-    }
-  }
+  await markDirty();
+  triggerSync();
 }
 
 export function formatTime(totalSeconds: number): string {

@@ -24,9 +24,10 @@ completed inside the app — no website visit, phone call, or email to
 customer service is required. Our privacy policy (viewable in the app) has
 been updated to describe the in-app deletion option.
 
-A screen recording captured on a physical device demonstrating account
-creation, navigating to the deletion option, and the complete deletion flow
-from initiation to confirmation has been added to the App Review notes.
+A screen recording captured on a physical device demonstrating navigation
+to the deletion option and the complete deletion flow from initiation to
+confirmation (including the signed-out state afterward) has been added to
+the App Review notes.
 
 Thank you for your time.
 
@@ -34,7 +35,6 @@ Thank you for your time.
 CHECKLIST BEFORE SENDING (not part of the reply):
 [ ] Build 8 (1.0.1) submitted via EAS and showing in App Store Connect
 [ ] Screen recording made on a PHYSICAL iPhone/iPad showing:
-      - creating a new account (or signing in with the demo account)
       - Me tab -> DELETE ACCOUNT -> confirmation dialog -> Delete
       - signed-out state afterwards
 [ ] Recording link/file added to App Review Information -> Notes

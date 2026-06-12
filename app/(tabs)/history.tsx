@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
   WorkoutResult,
 } from '../../src/storage/workoutStorage';
 import { getWorkouts } from '../../src/data/workoutData';
+import { onSynced, requestSync } from '../../src/lib/sync';
 import { colors, spacing } from '../../src/theme';
 
 export default function HistoryScreen() {
@@ -30,8 +31,12 @@ export default function HistoryScreen() {
   useFocusEffect(
     useCallback(() => {
       loadResults();
+      requestSync(); // pull any changes made elsewhere when this tab is opened
     }, [])
   );
+
+  // Re-read after a background sync (e.g. data pulled from another device).
+  useEffect(() => onSynced(() => loadResults()), []);
 
   async function loadResults() {
     const all = await getResults();

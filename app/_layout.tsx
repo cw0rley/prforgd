@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Platform } from 'react-native';
+import { Platform, AppState } from 'react-native';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useWakeLock } from '../src/hooks/useWakeLock';
 import { colors } from '../src/theme';
 import { supabase } from '../src/lib/supabase';
 import { initWorkoutData } from '../src/data/workoutData';
+import { migrateLegacyStorage } from '../src/lib/localStore';
+import { requestSync, subscribeRealtime } from '../src/lib/sync';
 
 export default function RootLayout() {
   useKeepAwake();
@@ -15,6 +17,34 @@ export default function RootLayout() {
   // Initialize workout data from Supabase (with cache fallback)
   useEffect(() => {
     initWorkoutData();
+  }, []);
+
+  // Migrate any legacy (un-namespaced) local data once, then reconcile.
+  useEffect(() => {
+    migrateLegacyStorage().then(() => requestSync());
+  }, []);
+
+  // Sync whenever the app comes to the foreground (covers pulling changes made
+  // on other devices, and retrying anything left dirty by a failed sync).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') requestSync();
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Live cross-device updates: (re)subscribe to the signed-in user's rows.
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+      const uid = session?.user?.id;
+      if (uid) unsubscribe = subscribeRealtime(uid, () => requestSync());
+    });
+    return () => {
+      if (unsubscribe) unsubscribe();
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   // Handle OAuth callback - pick up session from URL hash after Google redirect

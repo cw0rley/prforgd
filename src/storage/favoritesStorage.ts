@@ -1,17 +1,34 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { KEYS, readJSON, writeJSON, markDirty } from '../lib/localStore';
 
-const FAVORITES_KEY = 'favorite_wods';
+function triggerSync(): void {
+  try {
+    const { requestSync } = require('../lib/sync');
+    requestSync();
+  } catch {
+    // sync module unavailable — local write already succeeded
+  }
+}
 
 export async function getFavorites(): Promise<string[]> {
-  const data = await AsyncStorage.getItem(FAVORITES_KEY);
-  return data ? JSON.parse(data) : [];
+  return readJSON<string[]>(KEYS.favorites, []);
 }
 
 export async function toggleFavorite(wodId: string): Promise<boolean> {
   const favs = await getFavorites();
   const isFav = favs.includes(wodId);
   const updated = isFav ? favs.filter((id) => id !== wodId) : [...favs, wodId];
-  await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(updated));
+  await writeJSON(KEYS.favorites, updated);
+
+  // Keep a tombstone set in step so un-favoriting propagates (and a re-favorite
+  // clears the tombstone) rather than being resurrected by the union merge.
+  const tombstones = await readJSON<string[]>(KEYS.favoritesDeleted, []);
+  const tombSet = new Set(tombstones);
+  if (isFav) tombSet.add(wodId);
+  else tombSet.delete(wodId);
+  await writeJSON(KEYS.favoritesDeleted, Array.from(tombSet));
+
+  await markDirty();
+  triggerSync();
   return !isFav;
 }
 

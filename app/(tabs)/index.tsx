@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { getWorkouts, canDoWod } from '../../src/data/workoutData';
 import { getPRForWod, formatTime, WorkoutResult } from '../../src/storage/workoutStorage';
 import { getUserEquipment } from '../../src/storage/equipmentStorage';
 import { getFavorites, toggleFavorite } from '../../src/storage/favoritesStorage';
+import { onSynced } from '../../src/lib/sync';
 import { colors, spacing } from '../../src/theme';
 
 const categoryLabels: Record<string, string> = {
@@ -46,6 +47,13 @@ export default function HomeScreen() {
       getFavorites().then(setFavorites);
     }, [])
   );
+
+  // Refresh after a background sync (e.g. data pulled from another device).
+  useEffect(() => onSynced(() => {
+    loadPRs();
+    getUserEquipment().then(setUserEquipment);
+    getFavorites().then(setFavorites);
+  }), []);
 
   async function loadPRs() {
     const prMap: Record<string, WorkoutResult | null> = {};

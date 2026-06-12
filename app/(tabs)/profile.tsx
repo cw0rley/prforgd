@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Session } from '@supabase/supabase-js';
 import { signUp, signIn, signOut, deleteAccount, getSession, onAuthChange } from '../../src/lib/auth';
 import { supabase } from '../../src/lib/supabase';
-import { fullSync, SyncStats } from '../../src/lib/sync';
+import { syncNow, mergeAnonIntoUser, SyncStats } from '../../src/lib/sync';
 import { getResults } from '../../src/storage/workoutStorage';
 import { getFavorites } from '../../src/storage/favoritesStorage';
 import { colors, spacing } from '../../src/theme';
@@ -64,6 +64,7 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [focusedInput, setFocusedInput] = useState<'email' | 'password' | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -73,14 +74,40 @@ export default function ProfileScreen() {
   const { toast, show: showToast, hide: hideToast } = useToast();
   const router = useRouter();
 
+  // Tracks the last user we ran the post-login merge+sync for, so auth events
+  // that fire repeatedly (token refresh, focus) don't re-trigger it.
+  const lastUserRef = useRef<string | null>(null);
+
   useFocusEffect(
     useCallback(() => {
-      getSession().then(setSession);
+      getSession().then(handleSession);
       loadStats();
-      const { data: listener } = onAuthChange(setSession);
+      const { data: listener } = onAuthChange(handleSession);
       return () => listener.subscription.unsubscribe();
     }, [])
   );
+
+  function handleSession(s: Session | null) {
+    setSession(s);
+    const uid = s?.user?.id ?? null;
+    if (uid && uid !== lastUserRef.current) {
+      lastUserRef.current = uid;
+      void afterLogin(uid);
+    } else if (!uid) {
+      lastUserRef.current = null;
+    }
+  }
+
+  // Runs once per login: fold any logged-out (anonymous) data into the user's
+  // bucket, then reconcile with the cloud.
+  async function afterLogin(userId: string) {
+    setSyncing(true);
+    await mergeAnonIntoUser(userId);
+    const result = await syncNow();
+    setSyncResult(result);
+    setSyncing(false);
+    loadStats();
+  }
 
   async function loadStats() {
     const results = await getResults();
@@ -115,14 +142,7 @@ export default function ProfileScreen() {
     setLoading(true);
     try {
       const { session: s } = await signIn(email, password);
-      setSession(s);
-      if (s) {
-        setSyncing(true);
-        const result = await fullSync(s.user.id);
-        setSyncResult(result);
-        setSyncing(false);
-        loadStats();
-      }
+      handleSession(s); // triggers the post-login merge + sync
     } catch (err: any) {
       showToast(err.message, 'error');
     }
@@ -130,9 +150,17 @@ export default function ProfileScreen() {
   }
 
   async function handleSignOut() {
+    // Flush any pending local changes while we still hold the session.
+    try {
+      await syncNow();
+    } catch {
+      // best-effort; tombstones/dirty flag persist for the next login
+    }
     try {
       await signOut();
+      lastUserRef.current = null;
       setSession(null);
+      setSyncResult(null);
       setEmail('');
       setPassword('');
     } catch (err: any) {
@@ -145,9 +173,13 @@ export default function ProfileScreen() {
     try {
       if (Platform.OS === 'web') {
         // On web the browser redirects to the provider and back automatically.
+        // redirectTo uses the current origin so it returns to localhost in dev
+        // and prforgd.com in prod. The (tabs) group is not part of the URL, so
+        // the profile tab is served at /profile. _layout picks up the tokens
+        // from the callback hash regardless of which route we land on.
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
-          options: { redirectTo: window.location.origin + '/(tabs)/profile' },
+          options: { redirectTo: window.location.origin + '/profile' },
         });
         if (error) throw error;
       } else {
@@ -246,7 +278,7 @@ export default function ProfileScreen() {
     if (!session) return;
     setSyncing(true);
     setSyncResult(null);
-    const result = await fullSync(session.user.id);
+    const result = await syncNow();
     setSyncResult(result);
     loadStats();
     setSyncing(false);
@@ -254,7 +286,11 @@ export default function ProfileScreen() {
 
   if (session) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && web.signedInPage]}
+      >
+        <View style={Platform.OS === 'web' ? web.signedInColumn : undefined}>
         <Text style={styles.title}>PROFILE</Text>
         <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
 
@@ -325,6 +361,7 @@ export default function ProfileScreen() {
             {deleting ? 'DELETING ACCOUNT...' : 'DELETE ACCOUNT'}
           </Text>
         </TouchableOpacity>
+        </View>
       </ScrollView>
     );
   }
@@ -372,17 +409,26 @@ export default function ProfileScreen() {
             onBlur={() => setFocusedInput(null)}
             onSubmitEditing={submit}
           />
-          <TextInput
-            style={[web.input, focusedInput === 'password' && web.inputFocused]}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Password"
-            placeholderTextColor={colors.textMuted}
-            secureTextEntry
-            onFocus={() => setFocusedInput('password')}
-            onBlur={() => setFocusedInput(null)}
-            onSubmitEditing={submit}
-          />
+          <View style={web.passwordWrap}>
+            <TextInput
+              style={[web.input, web.inputWithIcon, focusedInput === 'password' && web.inputFocused]}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry={!showPassword}
+              onFocus={() => setFocusedInput('password')}
+              onBlur={() => setFocusedInput(null)}
+              onSubmitEditing={submit}
+            />
+            <Pressable style={web.eyeBtn} onPress={() => setShowPassword((v) => !v)} hitSlop={8}>
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color={colors.textMuted}
+              />
+            </Pressable>
+          </View>
 
           <HoverButton
             style={web.primaryBtn}
@@ -470,14 +516,23 @@ export default function ProfileScreen() {
         autoCapitalize="none"
         keyboardType="email-address"
       />
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Password"
-        placeholderTextColor={colors.textMuted}
-        secureTextEntry
-      />
+      <View style={styles.passwordWrap}>
+        <TextInput
+          style={[styles.input, styles.inputWithIcon]}
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Password"
+          placeholderTextColor={colors.textMuted}
+          secureTextEntry={!showPassword}
+        />
+        <Pressable style={styles.eyeBtn} onPress={() => setShowPassword((v) => !v)} hitSlop={8}>
+          <Ionicons
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={20}
+            color={colors.textMuted}
+          />
+        </Pressable>
+      </View>
 
       <TouchableOpacity
         style={[styles.authBtn, loading && { opacity: 0.5 }]}
@@ -588,6 +643,23 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+  },
+  passwordWrap: {
+    position: 'relative',
+    marginBottom: spacing.md,
+  },
+  inputWithIcon: {
+    marginBottom: 0,
+    paddingRight: 46,
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    bottom: 0,
+    width: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   divider: {
     flexDirection: 'row',
@@ -803,6 +875,15 @@ const web = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing.xl * 2,
   },
+  // Signed-in profile on web: center the content in a max-width column so it
+  // doesn't stretch phone-narrow/full-width across a desktop screen.
+  signedInPage: {
+    alignItems: 'center',
+  },
+  signedInColumn: {
+    width: '100%',
+    maxWidth: 480,
+  },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -880,6 +961,24 @@ const web = StyleSheet.create({
   inputFocused: {
     borderColor: colors.primary,
   },
+  passwordWrap: {
+    position: 'relative',
+    marginBottom: spacing.md,
+  },
+  inputWithIcon: {
+    marginBottom: 0,
+    paddingRight: 46,
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    bottom: 0,
+    width: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  } as any,
   primaryBtn: {
     backgroundColor: colors.primary,
     borderRadius: 10,
