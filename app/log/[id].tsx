@@ -401,11 +401,8 @@ export default function LogWorkoutScreen() {
       showToast('NEW PR! You set a new personal record!', 'success', 5000);
       await new Promise(r => setTimeout(r, 2000));
     }
-    if (isCustom) {
-      router.replace('/(tabs)/history');
-    } else {
-      router.replace(`/wod/${heroWod!.id}`);
-    }
+    // After saving, return to the main WODs screen.
+    router.replace('/(tabs)');
   }
 
   function formatTimeFull(totalSec: number): string {
