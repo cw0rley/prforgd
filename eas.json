@@ -22,6 +22,10 @@
         "appleId": "prcunningham@gmail.com",
         "ascAppId": "6774586516",
         "appleTeamId": "N27NV97893"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal"
       }
     }
   }
