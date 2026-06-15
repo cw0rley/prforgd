@@ -1,0 +1,19 @@
+PRForgd 1.0.2 — What's New
+(Paste into App Store Connect "What's New in This Version" and Google Play "Release notes")
+
+=====================================================
+SHORT VERSION (recommended for the stores)
+=====================================================
+New in 1.0.2:
+- Workout timer upgrade: a 3-2-1-GO countdown to kick off every workout, plus an AMRAP count-down timer with audio cues so you always know when time's up.
+- The timer now stays visible the whole workout, pinned right above your controls.
+- Cleaner workout screens and smoother navigation after you log a result.
+- Faster, more reliable syncing and date handling.
+- Bug fixes and stability improvements.
+
+=====================================================
+EVEN SHORTER (if you want it tight)
+=====================================================
+- New 3-2-1-GO start countdown and an AMRAP timer with sound.
+- Timer stays on screen during your whole workout.
+- UI polish, more reliable sync, and bug fixes.

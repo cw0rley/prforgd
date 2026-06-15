@@ -1,8 +1,23 @@
+import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import { Session, User } from '@supabase/supabase-js';
 
+// The web app handles the auth-callback URL (sets the session from the hash),
+// so always confirm there. A native signup has no reliable redirect back into
+// the app, which made confirmation links flaky; landing on the web is robust,
+// and the user then signs into the app once confirmed.
+const WEB_CONFIRM_URL = 'https://www.prforgd.com';
+
 export async function signUp(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const emailRedirectTo =
+    Platform.OS === 'web' && typeof window !== 'undefined'
+      ? window.location.origin
+      : WEB_CONFIRM_URL;
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo },
+  });
   if (error) throw error;
   return data;
 }
