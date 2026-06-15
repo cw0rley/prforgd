@@ -7,12 +7,14 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
+  Platform,
 } from 'react-native';
 import { Toast, useToast } from '../../src/components/Toast';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { randomUUID } from 'expo-crypto';
 import { useWakeLock } from '../../src/hooks/useWakeLock';
+import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { getWorkouts } from '../../src/data/workoutData';
 import { getGeneratedWod } from '../../src/storage/generatedWodStorage';
 import {
@@ -67,12 +69,27 @@ export default function LogWorkoutScreen() {
   const isForTime = wod?.type === 'for-time';
   const totalRounds = (heroWod?.totalRounds || customWod?.totalRounds) || 0;
 
+  // AMRAP countdown target (seconds). 0 when not an AMRAP or no time cap set —
+  // capless AMRAPs fall back to the count-up timer.
+  const capSeconds = isAmrap && wod && wod.timeCap ? wod.timeCap * 60 : 0;
+  const isCountdown = isTimerMode && isAmrap && capSeconds > 0;
+
   // Timer state
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerStarted, setTimerStarted] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
+
+  // 3-2-1-GO lead-in (all timer workouts): 3 | 2 | 1 | 0 (=GO) | null (inactive)
+  const [leadIn, setLeadIn] = useState<number | null>(null);
+  const leadInRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // AMRAP countdown end state + flashing "TIME!" cue
+  const [timeUp, setTimeUp] = useState(false);
+  const [flashOn, setFlashOn] = useState(false);
+  const flashRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastBeepRef = useRef<number | null>(null);
 
   // Round tracking (timer mode)
   const [roundTimes, setRoundTimes] = useState<RoundTime[]>([]);
@@ -105,9 +122,32 @@ export default function LogWorkoutScreen() {
     );
   }, []);
 
+  // Timer sound effects (lead-in beeps, GO tone, AMRAP buzzer)
+  const beepPlayer = useAudioPlayer(require('../../assets/sounds/beep.wav'));
+  const goPlayer = useAudioPlayer(require('../../assets/sounds/go.wav'));
+  const buzzerPlayer = useAudioPlayer(require('../../assets/sounds/buzzer.wav'));
+
+  function playSound(player: ReturnType<typeof useAudioPlayer>) {
+    try {
+      player.seekTo(0);
+      player.play();
+    } catch {
+      // ignore audio failures — sound is a non-critical enhancement
+    }
+  }
+
+  useEffect(() => {
+    // Allow the cues to play even when the phone is on silent (iOS).
+    if (Platform.OS !== 'web') {
+      setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
+    }
+  }, []);
+
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (leadInRef.current) clearInterval(leadInRef.current);
+      if (flashRef.current) clearInterval(flashRef.current);
     };
   }, []);
 
@@ -124,6 +164,41 @@ export default function LogWorkoutScreen() {
     intervalRef.current = setInterval(() => {
       setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
     }, 100);
+  }
+
+  // 3-2-1-GO lead-in shown before the clock actually starts. Used for every
+  // timer workout (for-time, rounds, and AMRAP).
+  function runLeadIn() {
+    if (leadInRef.current) clearInterval(leadInRef.current);
+    setLeadIn(3);
+    playSound(beepPlayer);
+    let n = 3;
+    leadInRef.current = setInterval(() => {
+      n -= 1;
+      if (n > 0) {
+        setLeadIn(n);
+        playSound(beepPlayer);
+      } else if (n === 0) {
+        setLeadIn(0); // GO!
+        playSound(goPlayer);
+      } else {
+        if (leadInRef.current) {
+          clearInterval(leadInRef.current);
+          leadInRef.current = null;
+        }
+        setLeadIn(null);
+        startTimer();
+      }
+    }, 1000);
+  }
+
+  // START button: fresh start runs the lead-in; resume just continues.
+  function handleStart() {
+    if (timerStarted) {
+      startTimer();
+    } else {
+      runLeadIn();
+    }
   }
 
   function pauseTimer() {
@@ -190,12 +265,54 @@ export default function LogWorkoutScreen() {
 
   function resetTimer() {
     pauseTimer();
+    if (leadInRef.current) {
+      clearInterval(leadInRef.current);
+      leadInRef.current = null;
+    }
     setElapsedSeconds(0);
     setTimerStarted(false);
     setCurrentRound(1);
     setRoundTimes([]);
     startTimeRef.current = 0;
+    setLeadIn(null);
+    setTimeUp(false);
+    lastBeepRef.current = null;
   }
+
+  // AMRAP countdown: final 3-2-1 beeps + buzzer + auto-stop at zero.
+  useEffect(() => {
+    if (!isCountdown || !timerRunning) return;
+    const rem = capSeconds - elapsedSeconds;
+    if (rem <= 0) {
+      pauseTimer();
+      setElapsedSeconds(capSeconds);
+      setTimeUp(true);
+      playSound(buzzerPlayer);
+    } else if (rem <= 3 && lastBeepRef.current !== rem) {
+      lastBeepRef.current = rem;
+      playSound(beepPlayer);
+    }
+  }, [elapsedSeconds, isCountdown, timerRunning, capSeconds]);
+
+  // Flash the "TIME!" message while the AMRAP is over.
+  useEffect(() => {
+    if (!timeUp) {
+      if (flashRef.current) {
+        clearInterval(flashRef.current);
+        flashRef.current = null;
+      }
+      setFlashOn(false);
+      return;
+    }
+    setFlashOn(true);
+    flashRef.current = setInterval(() => setFlashOn((f) => !f), 500);
+    return () => {
+      if (flashRef.current) {
+        clearInterval(flashRef.current);
+        flashRef.current = null;
+      }
+    };
+  }, [timeUp]);
 
   // --- Save ---
   async function handleSave() {
@@ -313,6 +430,9 @@ export default function LogWorkoutScreen() {
   const showPostWorkout = isTimerMode
     ? (isAmrap || (timerStarted && !timerRunning))
     : true;
+  const remaining = Math.max(0, capSeconds - elapsedSeconds);
+  const leadingIn = leadIn !== null;
+  const leadInLabel = leadIn === 0 ? 'GO!' : String(leadIn);
 
   return (
     <>
@@ -336,12 +456,14 @@ export default function LogWorkoutScreen() {
           <Text style={styles.workoutText}>{wod.workout}</Text>
         </View>
 
-        {/* ===== TIMER MODE ===== */}
-        {isTimerMode && !isAmrap && (
+        {/* ===== TIMER MODE (count-up: for-time, rounds, capless AMRAP) ===== */}
+        {isTimerMode && !isCountdown && (
           <View style={styles.section}>
-            <Text style={styles.timerDisplay}>{formatTimeFull(elapsedSeconds)}</Text>
+            <Text style={[styles.timerDisplay, leadingIn && styles.timerLeadIn]}>
+              {leadingIn ? leadInLabel : formatTimeFull(elapsedSeconds)}
+            </Text>
 
-            {hasRounds && timerStarted && (
+            {!leadingIn && hasRounds && timerStarted && (
               <Text style={styles.roundIndicator}>
                 Round {Math.min(currentRound, totalRounds)} of {totalRounds}
               </Text>
@@ -364,6 +486,26 @@ export default function LogWorkoutScreen() {
                   </View>
                 ))}
               </View>
+            )}
+          </View>
+        )}
+
+        {/* ===== AMRAP COUNTDOWN ===== */}
+        {isCountdown && (
+          <View style={styles.section}>
+            <Text
+              style={[
+                styles.timerDisplay,
+                leadingIn && styles.timerLeadIn,
+                !leadingIn && !timeUp && remaining <= 10 && styles.timerWarn,
+                timeUp && styles.timerDone,
+                timeUp && !flashOn && styles.timerDim,
+              ]}
+            >
+              {leadingIn ? leadInLabel : timeUp ? 'TIME!' : formatTimeFull(remaining)}
+            </Text>
+            {!leadingIn && !timeUp && (
+              <Text style={styles.roundIndicator}>{wod.timeCap} MIN AMRAP</Text>
             )}
           </View>
         )}
@@ -495,15 +637,15 @@ export default function LogWorkoutScreen() {
           <Text style={styles.freeCounter}>{freeRemaining} free workout{freeRemaining === 1 ? '' : 's'} remaining</Text>
         )}
         <View style={styles.bottomBarButtons}>
-          {isTimerMode && !isAmrap && (
+          {isTimerMode && (
             <>
-              {!timerStarted && !isFinished && (
-                <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={startTimer}>
+              {!timerStarted && !isFinished && !leadingIn && (
+                <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={handleStart}>
                   <Text style={styles.bottomBtnOutlineGreenText}>START</Text>
                 </TouchableOpacity>
               )}
 
-              {timerStarted && !timerRunning && !isFinished && (
+              {timerStarted && !timerRunning && !isFinished && !timeUp && !leadingIn && (
                 <TouchableOpacity style={styles.bottomBtnSmallOutlineBlue} onPress={startTimer}>
                   <Text style={styles.bottomBtnOutlineBlueText}>RESUME</Text>
                 </TouchableOpacity>
@@ -541,7 +683,7 @@ export default function LogWorkoutScreen() {
                 </TouchableOpacity>
               )}
 
-              {timerStarted && !timerRunning && (
+              {timerStarted && !timerRunning && !leadingIn && (
                 <TouchableOpacity style={styles.bottomBtnSmallOutlineOrange} onPress={resetTimer}>
                   <Text style={styles.bottomBtnOutlineOrangeText}>RESET</Text>
                 </TouchableOpacity>
@@ -616,6 +758,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
     fontVariant: ['tabular-nums'],
+  },
+  timerLeadIn: {
+    fontSize: 96,
+    color: colors.primary,
+  },
+  timerWarn: {
+    color: '#FFD700',
+  },
+  timerDone: {
+    color: colors.danger,
+  },
+  timerDim: {
+    opacity: 0.2,
   },
   roundIndicator: {
     fontSize: 18,
