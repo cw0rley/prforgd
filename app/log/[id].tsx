@@ -437,7 +437,9 @@ export default function LogWorkoutScreen() {
   return (
     <>
       <Stack.Screen options={{
-        title: isTimerMode ? '' : 'Log',
+        title: wod.name,
+        headerTitleAlign: 'center',
+        headerTitleStyle: { color: colors.text, fontWeight: 'bold', fontSize: 24 },
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
@@ -446,7 +448,6 @@ export default function LogWorkoutScreen() {
       }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
-        <Text style={styles.wodName}>{wod.name}</Text>
 
         <View style={styles.badgeRow}>
           {rx ? <Text style={styles.rxBadge}>Rx</Text> : <Text style={styles.scaledBadge}>Scaled</Text>}
