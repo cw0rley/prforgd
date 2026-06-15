@@ -430,7 +430,7 @@ export default function LogWorkoutScreen() {
     : true;
   const remaining = Math.max(0, capSeconds - elapsedSeconds);
   const leadingIn = leadIn !== null;
-  const leadInLabel = leadIn === 0 ? 'GO!' : String(leadIn);
+  const leadInLabel = leadIn === null ? '' : leadIn === 0 ? 'GO!' : String(leadIn);
 
   return (
     <>
