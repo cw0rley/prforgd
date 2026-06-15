@@ -15,6 +15,7 @@ import {
   getResultsForWod,
   getPRForWod,
   formatTime,
+  formatWorkoutDate,
   WorkoutResult,
   deleteResult,
 } from '../../src/storage/workoutStorage';
@@ -120,7 +121,7 @@ export default function WodDetailScreen() {
               </Text>
             )}
             <Text style={styles.prDate}>
-              {new Date(pr.date).toLocaleDateString()}
+              {formatWorkoutDate(pr.date)}
             </Text>
           </View>
         )}
@@ -147,7 +148,7 @@ export default function WodDetailScreen() {
                       </Text>
                     )}
                     <Text style={styles.historyDate}>
-                      {new Date(r.date).toLocaleDateString()}
+                      {formatWorkoutDate(r.date)}
                     </Text>
                   </View>
                   <View style={styles.badges}>

@@ -16,6 +16,8 @@ import {
   deleteResult,
   toggleFavorite,
   formatTime,
+  formatWorkoutDate,
+  workoutDateMs,
   WorkoutResult,
 } from '../../src/storage/workoutStorage';
 import { getWorkouts } from '../../src/data/workoutData';
@@ -40,7 +42,7 @@ export default function HistoryScreen() {
 
   async function loadResults() {
     const all = await getResults();
-    setResults(all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    setResults(all.sort((a, b) => workoutDateMs(b.date) - workoutDateMs(a.date)));
   }
 
   async function handleDelete(resultId: string) {
@@ -156,7 +158,7 @@ export default function HistoryScreen() {
                 <Text style={styles.wodName}>{getWodName(r)}</Text>
               </View>
               <Text style={styles.date}>
-                {new Date(r.date).toLocaleDateString()}
+                {formatWorkoutDate(r.date)}
               </Text>
             </View>
 

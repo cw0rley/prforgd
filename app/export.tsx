@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { getResults, formatTime, WorkoutResult } from '../src/storage/workoutStorage';
+import { getResults, formatTime, formatWorkoutDate, WorkoutResult } from '../src/storage/workoutStorage';
 import { getWorkouts } from '../src/data/workoutData';
 import { colors, spacing } from '../src/theme';
 import * as Clipboard from 'expo-clipboard';
@@ -23,7 +23,7 @@ function resultToCSVRow(r: WorkoutResult): string {
   const roundSplits = r.roundTimes
     ? r.roundTimes.map((rt) => `Rd${rt.round}:${formatTime(rt.splitSeconds)}`).join(' ')
     : '';
-  return `"${wod?.name || r.wodId}","${new Date(r.date).toLocaleDateString()}","${score}","${r.rx ? 'Rx' : 'Scaled'}","${r.isPR ? 'Yes' : 'No'}","${roundSplits}","${r.notes.replace(/"/g, '""')}"`;
+  return `"${wod?.name || r.wodId}","${formatWorkoutDate(r.date)}","${score}","${r.rx ? 'Rx' : 'Scaled'}","${r.isPR ? 'Yes' : 'No'}","${roundSplits}","${r.notes.replace(/"/g, '""')}"`;
 }
 
 export default function ExportScreen() {

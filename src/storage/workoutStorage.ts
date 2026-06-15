@@ -67,7 +67,7 @@ export async function getResultsForWod(wodId: string): Promise<WorkoutResult[]> 
   const results = await getResults();
   return results
     .filter((r) => r.wodId === wodId)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort((a, b) => workoutDateMs(b.date) - workoutDateMs(a.date));
 }
 
 export async function getPRForWod(wodId: string): Promise<WorkoutResult | null> {
@@ -123,4 +123,31 @@ export function formatTime(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// Tolerant date parsing. The phone's JS engine (Hermes) is stricter than a
+// browser and rejects some legacy date strings (e.g. Postgres-style
+// "2024-01-15 10:00:00+00" with a space) as Invalid Date. Normalize the common
+// cases so old records don't render as "Invalid Date" or break sorting.
+export function parseWorkoutDate(s?: string | null): Date | null {
+  if (!s) return null;
+  let d = new Date(s);
+  if (!isNaN(d.getTime())) return d;
+  // Replace the date/time separating space with 'T' (Postgres timestamp format).
+  d = new Date(String(s).replace(' ', 'T'));
+  if (!isNaN(d.getTime())) return d;
+  return null;
+}
+
+// Display helper: a localized date string, or an em dash when unparseable.
+export function formatWorkoutDate(s?: string | null): string {
+  const d = parseWorkoutDate(s);
+  return d ? d.toLocaleDateString() : '—';
+}
+
+// Sort key: ms since epoch, or 0 for unparseable dates so they sort oldest
+// (to the bottom) rather than NaN-floating to the top.
+export function workoutDateMs(s?: string | null): number {
+  const d = parseWorkoutDate(s);
+  return d ? d.getTime() : 0;
 }
