@@ -447,10 +447,6 @@ export default function LogWorkoutScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
 
-        <View style={styles.badgeRow}>
-          {rx ? <Text style={styles.rxBadge}>Rx</Text> : <Text style={styles.scaledBadge}>Scaled</Text>}
-        </View>
-
         <View style={styles.workoutBox}>
           <Text style={styles.workoutText}>{wod.workout}</Text>
         </View>
