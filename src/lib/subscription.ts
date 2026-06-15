@@ -5,6 +5,22 @@ import { getResults } from '../storage/workoutStorage';
 const GRANDFATHERED_KEY = 'prforgd_grandfathered';
 const FREE_LIMIT = 10;
 
+// Email domains granted unlimited access (internal / org accounts).
+const UNLIMITED_EMAIL_DOMAINS = ['claytonrugby.com'];
+
+/** True when the email belongs to a domain granted unlimited access. */
+export function isUnlimitedEmail(email?: string | null): boolean {
+  if (!email) return false;
+  const domain = email.trim().toLowerCase().split('@')[1];
+  return !!domain && UNLIMITED_EMAIL_DOMAINS.includes(domain);
+}
+
+/** Email of the currently signed-in user, if any. */
+async function getCurrentEmail(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user?.email ?? null;
+}
+
 export type SubscriptionPlan = 'monthly' | 'yearly';
 export type SubscriptionStatus = 'active' | 'canceled' | 'expired' | 'grandfathered' | 'free';
 
@@ -18,6 +34,11 @@ export interface Subscription {
 export async function canSaveWorkout(userId: string | null): Promise<{ allowed: boolean; reason?: string; workoutsUsed: number }> {
   const results = await getResults();
   const count = results.length;
+
+  // Internal / org accounts (e.g. claytonrugby.com) get unlimited access.
+  if (isUnlimitedEmail(await getCurrentEmail())) {
+    return { allowed: true, workoutsUsed: count };
+  }
 
   // No account — check local count only
   if (!userId) {
@@ -110,6 +131,8 @@ export async function isGrandfathered(userId: string): Promise<boolean> {
 
 // Get remaining free workouts
 export async function getFreeRemaining(): Promise<number> {
+  // Unlimited-access accounts never see the free-workout counter.
+  if (isUnlimitedEmail(await getCurrentEmail())) return Number.MAX_SAFE_INTEGER;
   const results = await getResults();
   return Math.max(0, FREE_LIMIT - results.length);
 }
