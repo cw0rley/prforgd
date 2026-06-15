@@ -70,7 +70,8 @@ export default function WodDetailScreen() {
   return (
     <>
       <Stack.Screen options={{
-        title: '',
+        title: wod.name,
+        headerTitleAlign: 'center',
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
@@ -78,8 +79,7 @@ export default function WodDetailScreen() {
         ),
       }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.wodName}>{wod.name}</Text>
-        <Text style={styles.heroName}>{wod.hero}</Text>
+        {wod.hero ? <Text style={styles.heroName}>{wod.hero}</Text> : null}
         <Text style={styles.description}>{wod.description}</Text>
 
         <View style={styles.workoutBox}>
