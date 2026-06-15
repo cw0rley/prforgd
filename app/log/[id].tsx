@@ -437,7 +437,7 @@ export default function LogWorkoutScreen() {
   return (
     <>
       <Stack.Screen options={{
-        title: isTimerMode ? wod.name : `Log ${wod.name}`,
+        title: isTimerMode ? '' : 'Log',
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
