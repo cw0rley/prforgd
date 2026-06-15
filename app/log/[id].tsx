@@ -8,6 +8,7 @@ import {
   ScrollView,
   Switch,
   Platform,
+  Modal,
 } from 'react-native';
 import { Toast, useToast } from '../../src/components/Toast';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -454,57 +455,23 @@ export default function LogWorkoutScreen() {
           <Text style={styles.workoutText}>{wod.workout}</Text>
         </View>
 
-        {/* ===== TIMER MODE (count-up: for-time, rounds, capless AMRAP) ===== */}
-        {isTimerMode && !isCountdown && (
+        {/* Round/split history (live timer itself is pinned in the bottom band) */}
+        {isTimerMode && !isCountdown && roundTimes.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.timerDisplay, leadingIn && styles.timerLeadIn]}>
-              {leadingIn ? leadInLabel : formatTimeFull(elapsedSeconds)}
-            </Text>
-
-            {!leadingIn && hasRounds && timerStarted && (
-              <Text style={styles.roundIndicator}>
-                Round {Math.min(currentRound, totalRounds)} of {totalRounds}
-              </Text>
-            )}
-
-            {/* Timer buttons moved to bottom bar */}
-
-            {roundTimes.length > 0 && (
-              <View style={styles.roundsList}>
-                <Text style={styles.label}>{isForTime ? 'SPLITS' : 'ROUND SPLITS'}</Text>
-                {[...roundTimes].reverse().map((rt) => (
-                  <View key={rt.round} style={styles.roundRow}>
-                    <Text style={styles.roundLabel}>{isForTime ? `Split ${rt.round}` : `Round ${rt.round}`}</Text>
-                    <View style={styles.roundTimesCol}>
-                      <Text style={styles.roundSplit}>{formatTimeFull(rt.splitSeconds)}</Text>
-                      <Text style={styles.roundCumulative}>
-                        Total: {formatTimeFull(rt.cumulativeSeconds)}
-                      </Text>
-                    </View>
+            <View style={styles.roundsList}>
+              <Text style={styles.label}>{isForTime ? 'SPLITS' : 'ROUND SPLITS'}</Text>
+              {[...roundTimes].reverse().map((rt) => (
+                <View key={rt.round} style={styles.roundRow}>
+                  <Text style={styles.roundLabel}>{isForTime ? `Split ${rt.round}` : `Round ${rt.round}`}</Text>
+                  <View style={styles.roundTimesCol}>
+                    <Text style={styles.roundSplit}>{formatTimeFull(rt.splitSeconds)}</Text>
+                    <Text style={styles.roundCumulative}>
+                      Total: {formatTimeFull(rt.cumulativeSeconds)}
+                    </Text>
                   </View>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* ===== AMRAP COUNTDOWN ===== */}
-        {isCountdown && (
-          <View style={styles.section}>
-            <Text
-              style={[
-                styles.timerDisplay,
-                leadingIn && styles.timerLeadIn,
-                !leadingIn && !timeUp && remaining <= 10 && styles.timerWarn,
-                timeUp && styles.timerDone,
-                timeUp && !flashOn && styles.timerDim,
-              ]}
-            >
-              {leadingIn ? leadInLabel : timeUp ? 'TIME!' : formatTimeFull(remaining)}
-            </Text>
-            {!leadingIn && !timeUp && (
-              <Text style={styles.roundIndicator}>{wod.timeCap} MIN AMRAP</Text>
-            )}
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
@@ -631,6 +598,31 @@ export default function LogWorkoutScreen() {
 
       {/* Fixed bottom bar with all action buttons */}
       <View style={styles.bottomBar}>
+        {/* Pinned live timer — always visible once the run starts */}
+        {isTimerMode && timerStarted && (
+          <View style={styles.timerBand}>
+            <Text
+              style={[
+                styles.timerBandTime,
+                isCountdown && !timeUp && remaining <= 10 && styles.timerWarn,
+                isCountdown && timeUp && styles.timerDone,
+                isCountdown && timeUp && !flashOn && styles.timerDim,
+              ]}
+            >
+              {isCountdown
+                ? (timeUp ? 'TIME!' : formatTimeFull(remaining))
+                : formatTimeFull(elapsedSeconds)}
+            </Text>
+            {isCountdown && !timeUp && (
+              <Text style={styles.timerBandLabel}>{wod.timeCap} MIN AMRAP</Text>
+            )}
+            {!isCountdown && hasRounds && (
+              <Text style={styles.timerBandLabel}>
+                Round {Math.min(currentRound, totalRounds)} of {totalRounds}
+              </Text>
+            )}
+          </View>
+        )}
         {showPostWorkout && freeRemaining !== null && freeRemaining > 0 && freeRemaining <= 10 && (
           <Text style={styles.freeCounter}>{freeRemaining} free workout{freeRemaining === 1 ? '' : 's'} remaining</Text>
         )}
@@ -706,6 +698,13 @@ export default function LogWorkoutScreen() {
           )}
         </View>
       </View>
+
+      {/* 3-2-1-GO lead-in: centered overlay so it's always on top, never scrolled off */}
+      <Modal visible={leadingIn} transparent animationType="fade" onRequestClose={() => {}}>
+        <View style={styles.leadInOverlay} pointerEvents="none">
+          <Text style={styles.leadInOverlayText}>{leadInLabel}</Text>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -717,7 +716,42 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingBottom: 140,
+    paddingBottom: 220,
+  },
+
+  // Pinned live-timer band (above the action buttons)
+  timerBand: {
+    alignItems: 'center',
+    paddingBottom: spacing.sm,
+    marginBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+  },
+  timerBandTime: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: colors.text,
+    fontVariant: ['tabular-nums'],
+  },
+  timerBandLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
+    marginTop: 2,
+  },
+
+  // 3-2-1-GO lead-in overlay
+  leadInOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  leadInOverlayText: {
+    fontSize: 140,
+    fontWeight: '900',
+    color: colors.primary,
+    fontVariant: ['tabular-nums'],
   },
   wodName: {
     fontSize: 28,
