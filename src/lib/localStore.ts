@@ -36,6 +36,25 @@ export function nsKey(base: string, ns: string): string {
   return `${base}:${ns}`;
 }
 
+// ---------------------------------------------------------------------------
+// Per-key async mutex.
+//
+// Storage is read-modify-write (read the whole array, change it, write it
+// back). A workout save and the sync reconciler both do this on the same key;
+// if they interleave, one's write silently clobbers the other's — which is how
+// a freshly-logged workout could vanish. withLock serializes the critical
+// section per base key so those read-modify-write blocks can't overlap.
+// ---------------------------------------------------------------------------
+const lockChains = new Map<string, Promise<unknown>>();
+export function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const prev = lockChains.get(key) ?? Promise.resolve();
+  // Each link waits for the previous one, regardless of its outcome.
+  const next = prev.catch(() => {}).then(fn);
+  // Store a never-rejecting tail so a thrown fn can't poison the chain.
+  lockChains.set(key, next.then(() => {}, () => {}));
+  return next;
+}
+
 // Resolve the current namespace from the active Supabase session.
 export async function getNamespace(): Promise<string> {
   try {

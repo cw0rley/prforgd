@@ -3,6 +3,7 @@ import {
   readJSON,
   writeJSON,
   markDirty,
+  withLock,
 } from '../lib/localStore';
 
 export interface RoundTime {
@@ -56,10 +57,15 @@ export async function getResults(): Promise<WorkoutResult[]> {
 }
 
 export async function saveResult(result: WorkoutResult): Promise<void> {
-  const results = await getResults();
-  results.push({ ...result, updatedAt: new Date().toISOString() });
-  await writeJSON(KEYS.results, results);
-  await markDirty();
+  // Locked read-modify-write so a concurrent sync can't overwrite this save
+  // (and vice-versa). Guard against a double-save of the same id too.
+  await withLock(KEYS.results, async () => {
+    const results = await getResults();
+    if (results.some((r) => r.id === result.id)) return;
+    results.push({ ...result, updatedAt: new Date().toISOString() });
+    await writeJSON(KEYS.results, results);
+    await markDirty();
+  });
   triggerSync();
 }
 
@@ -107,15 +113,17 @@ export async function toggleFavorite(resultId: string): Promise<boolean> {
 }
 
 export async function deleteResult(resultId: string): Promise<void> {
-  const results = await getResults();
-  const filtered = results.filter((r) => r.id !== resultId);
-  await writeJSON(KEYS.results, filtered);
+  await withLock(KEYS.results, async () => {
+    const results = await getResults();
+    const filtered = results.filter((r) => r.id !== resultId);
+    await writeJSON(KEYS.results, filtered);
 
-  // Record a tombstone so a later sync won't bring it back, then reconcile
-  // (which soft-deletes it in the cloud). If offline, the tombstone persists
-  // and the next sync retries the cloud delete.
-  await addDeletedId(resultId);
-  await markDirty();
+    // Record a tombstone so a later sync won't bring it back, then reconcile
+    // (which soft-deletes it in the cloud). If offline, the tombstone persists
+    // and the next sync retries the cloud delete.
+    await addDeletedId(resultId);
+    await markDirty();
+  });
   triggerSync();
 }
 

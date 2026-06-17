@@ -117,6 +117,13 @@ export default function LogWorkoutScreen() {
   const [freeRemaining, setFreeRemaining] = useState<number | null>(null);
   const { toast, show: showToast, hide: hideToast } = useToast();
 
+  // "More below" scroll cue — true when workout content extends under the
+  // pinned bottom band and the user hasn't scrolled to the end yet.
+  const [scrollViewH, setScrollViewH] = useState(0);
+  const [contentH, setContentH] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
+  const moreBelow = contentH > scrollViewH + 8 && scrollY < contentH - scrollViewH - 24;
+
   useEffect(() => {
     import('../../src/lib/subscription').then(({ getFreeRemaining }) =>
       getFreeRemaining().then(setFreeRemaining)
@@ -444,7 +451,14 @@ export default function LogWorkoutScreen() {
           </TouchableOpacity>
         ),
       }} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        scrollEventThrottle={16}
+        onLayout={(e) => setScrollViewH(e.nativeEvent.layout.height)}
+        onContentSizeChange={(_w, h) => setContentH(h)}
+        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+      >
         <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
 
         <View style={styles.workoutBox}>
@@ -594,6 +608,13 @@ export default function LogWorkoutScreen() {
 
       {/* Fixed bottom bar with all action buttons */}
       <View style={styles.bottomBar}>
+        {/* "More workout below" cue — floats just above the band's top edge,
+            marking where content scrolls out of view. Hidden once scrolled to end. */}
+        {moreBelow && (
+          <View style={styles.scrollCue} pointerEvents="none">
+            <Text style={styles.scrollCueText}>⌄ more ⌄</Text>
+          </View>
+        )}
         {/* Pinned live timer — always visible once the run starts */}
         {isTimerMode && timerStarted && (
           <View style={styles.timerBand}>
@@ -713,6 +734,25 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.md,
     paddingBottom: 220,
+  },
+
+  // "More below" scroll cue — pill floating just above the fixed bottom band
+  scrollCue: {
+    position: 'absolute',
+    top: -16,
+    alignSelf: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+  },
+  scrollCueText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
 
   // Pinned live-timer band (above the action buttons)

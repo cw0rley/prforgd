@@ -16,13 +16,15 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import { Session } from '@supabase/supabase-js';
-import { signUp, signIn, signOut, deleteAccount, getSession, onAuthChange } from '../../src/lib/auth';
+import { signUp, signIn, signOut, deleteAccount, getSession, onAuthChange, verifyEmailOtp, resendSignupOtp } from '../../src/lib/auth';
 import { supabase } from '../../src/lib/supabase';
 import { syncNow, mergeAnonIntoUser, SyncStats } from '../../src/lib/sync';
 import { getResults } from '../../src/storage/workoutStorage';
 import { getFavorites } from '../../src/storage/favoritesStorage';
+import { refreshCouponBonus } from '../../src/lib/subscription';
 import { colors, spacing } from '../../src/theme';
 import { Toast, useToast } from '../../src/components/Toast';
+import { CouponRedeem } from '../../src/components/CouponRedeem';
 
 // Completes any pending auth session if the app was reopened via the
 // OAuth redirect (no-op otherwise). Must run at module scope.
@@ -70,6 +72,9 @@ export default function ProfileScreen() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncStats | null>(null);
   const [tab, setTab] = useState<'login' | 'signup'>('login');
+  // When set, we're awaiting the 6-digit email confirmation code for this email.
+  const [otpEmail, setOtpEmail] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState('');
   const [stats, setStats] = useState({ workouts: 0, favorites: 0 });
   const { toast, show: showToast, hide: hideToast } = useToast();
   const router = useRouter();
@@ -106,6 +111,8 @@ export default function ProfileScreen() {
     const result = await syncNow();
     setSyncResult(result);
     setSyncing(false);
+    // Pull any redeemed-coupon bonus into the local cache for the free-limit checks.
+    refreshCouponBonus().catch(() => {});
     loadStats();
   }
 
@@ -127,11 +134,43 @@ export default function ProfileScreen() {
     setLoading(true);
     try {
       await signUp(email, password);
-      showToast('Check your email for a confirmation link.', 'success', 6000);
+      // Confirmation is a 6-digit code (not a link) — move to the verify step.
+      setOtpCode('');
+      setOtpEmail(email.trim());
+      showToast('We sent a 6-digit code to your email.', 'success', 6000);
     } catch (err: any) {
       showToast(err.message, 'error');
     }
     setLoading(false);
+  }
+
+  async function handleVerifyOtp() {
+    if (!otpEmail) return;
+    if (otpCode.trim().length < 6) {
+      showToast('Enter the 6-digit code from your email.', 'error');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { session: s } = await verifyEmailOtp(otpEmail, otpCode);
+      setOtpEmail(null);
+      setOtpCode('');
+      setPassword('');
+      handleSession(s); // signs in + triggers the post-login merge/sync
+    } catch (err: any) {
+      showToast(err.message || 'That code is incorrect or expired.', 'error');
+    }
+    setLoading(false);
+  }
+
+  async function handleResendOtp() {
+    if (!otpEmail) return;
+    try {
+      await resendSignupOtp(otpEmail);
+      showToast('New code sent.', 'success');
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    }
   }
 
   async function handleSignIn() {
@@ -284,6 +323,50 @@ export default function ProfileScreen() {
     setSyncing(false);
   }
 
+  // Email-confirmation step: user types the 6-digit code we emailed. Shown for
+  // both web and native (the code flow is identical on each).
+  if (otpEmail && !session) {
+    const isWeb = Platform.OS === 'web';
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={isWeb ? web.page : styles.content}>
+        <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
+        <View style={isWeb ? web.card : undefined}>
+          <Text style={styles.title}>VERIFY EMAIL</Text>
+          <Text style={styles.subtitle}>
+            Enter the 6-digit code we sent to {otpEmail}.
+          </Text>
+          <TextInput
+            style={[isWeb ? web.input : styles.input, styles.otpInput]}
+            value={otpCode}
+            onChangeText={(t) => setOtpCode(t.replace(/[^0-9]/g, '').slice(0, 6))}
+            placeholder="123456"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="number-pad"
+            maxLength={6}
+            autoFocus
+            onSubmitEditing={handleVerifyOtp}
+          />
+          <TouchableOpacity
+            style={[styles.authBtn, loading && { opacity: 0.5 }]}
+            onPress={handleVerifyOtp}
+            disabled={loading}
+          >
+            <Text style={styles.authBtnText}>{loading ? 'VERIFYING...' : 'VERIFY'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.helpBtn} onPress={handleResendOtp}>
+            <Text style={styles.helpBtnText}>RESEND CODE</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.textLink}
+            onPress={() => { setOtpEmail(null); setOtpCode(''); }}
+          >
+            <Text style={styles.textLinkText}>Use a different email</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
+
   if (session) {
     return (
       <ScrollView
@@ -311,6 +394,8 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>FAVORITES</Text>
           </View>
         </View>
+
+        <CouponRedeem onRedeemed={() => loadStats()} />
 
         <TouchableOpacity
           style={[styles.syncBtn, syncing && { opacity: 0.5 }]}
@@ -852,6 +937,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 2,
+  },
+  otpInput: {
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: 8,
+    textAlign: 'center',
+  },
+  textLink: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  textLinkText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
   },
   deleteAccountBtn: {
     paddingVertical: 14,

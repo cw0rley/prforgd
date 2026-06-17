@@ -9,6 +9,7 @@ import {
   markDirty,
   clearDirty,
   setLastSynced,
+  withLock,
 } from './localStore';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -226,18 +227,51 @@ async function reconcileResults(userId: string, ns: string, stats: SyncStats): P
     stats.uploaded += toPush.length;
   }
 
-  // Re-read tombstones right before writing: a delete that landed *during*
-  // this sync (after we snapshotted the cloud) must not be resurrected by our
-  // now-stale merged set. The delete also scheduled a rerun that will push its
-  // soft-delete to the cloud.
-  const freshTombs = await readJSONFor<string[]>(KEYS.resultsDeleted, ns, []);
-  for (const id of freshTombs) deletedSet.add(id);
-  const mergedArr = Array.from(merged.values()).filter((r) => !deletedSet.has(r.id));
-  await writeJSONFor(KEYS.results, ns, mergedArr);
-  stats.totalWorkouts = mergedArr.length;
+  // Re-read local right before writing, under the storage lock, so saves and
+  // deletes that landed *during* this sync's network I/O aren't clobbered by our
+  // now-stale merged set:
+  //   - a delete (tombstone) must not resurrect its row;
+  //   - a newly-added or freshly-edited workout must survive AND get pushed to
+  //     the cloud (the bug that silently lost just-logged workouts).
+  const lateUnpushed = await withLock(KEYS.results, async () => {
+    const freshTombs = await readJSONFor<string[]>(KEYS.resultsDeleted, ns, []);
+    for (const id of freshTombs) deletedSet.add(id);
 
-  // Remember the union of deletions so this device won't resurrect them.
-  await writeJSONFor(KEYS.resultsDeleted, ns, Array.from(deletedSet));
+    const freshLocal = (await readJSONFor<WorkoutResult[]>(KEYS.results, ns, [])).map((r) => {
+      const fixed = ensureUUID(r.id);
+      return fixed !== r.id ? { ...r, id: fixed } : r;
+    });
+
+    // Fold in anything added/updated locally during the network window. These
+    // were not part of the snapshot we just pushed, so they still need pushing.
+    const unpushed: WorkoutResult[] = [];
+    for (const r of freshLocal) {
+      if (deletedSet.has(r.id)) continue;
+      const existing = merged.get(r.id);
+      if (!existing || localUpdatedAt(r) > localUpdatedAt(existing)) {
+        merged.set(r.id, r);
+        unpushed.push(r);
+      }
+    }
+
+    const mergedArr = Array.from(merged.values()).filter((r) => !deletedSet.has(r.id));
+    await writeJSONFor(KEYS.results, ns, mergedArr);
+    stats.totalWorkouts = mergedArr.length;
+
+    // Remember the union of deletions so this device won't resurrect them.
+    await writeJSONFor(KEYS.resultsDeleted, ns, Array.from(deletedSet));
+    return unpushed;
+  });
+
+  // Push the late local rows to the cloud (outside the storage lock — no local
+  // read-modify-write here, just the network write).
+  if (lateUnpushed.length > 0) {
+    const { error } = await supabase
+      .from('workout_results')
+      .upsert(lateUnpushed.map((r) => toRow(r, userId)), { onConflict: 'user_id,id' });
+    if (error) throw new Error(error.message);
+    stats.uploaded += lateUnpushed.length;
+  }
 }
 
 // --- favorites: union minus tombstones ---------------------------------------

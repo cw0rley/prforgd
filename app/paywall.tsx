@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, spacing } from '../src/theme';
 import { supabase } from '../src/lib/supabase';
+import { CouponRedeem } from '../src/components/CouponRedeem';
 
 const STRIPE_MONTHLY_URL = 'https://buy.stripe.com/3cI8wPdol7LL8q47Ua57W00';
 const STRIPE_YEARLY_URL = 'https://buy.stripe.com/eVqaEXespfed35Keiy57W01';
@@ -19,8 +20,19 @@ export default function PaywallScreen() {
   const router = useRouter();
   const { reason } = useLocalSearchParams<{ reason: string }>();
   const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>('yearly');
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+  }, []);
 
   const needsAccount = reason === 'account_required';
+
+  // A redeemed coupon raises the free allowance — pop back so the user can keep
+  // logging where they left off.
+  function handleRedeemed() {
+    setTimeout(() => router.back(), 1200);
+  }
 
   async function handleSubscribe() {
     const baseUrl = selectedPlan === 'monthly' ? STRIPE_MONTHLY_URL : STRIPE_YEARLY_URL;
@@ -118,6 +130,18 @@ export default function PaywallScreen() {
             </Text>
           </>
         )}
+
+        {/* Coupon code */}
+        <View style={styles.couponBox}>
+          <Text style={styles.couponTitle}>HAVE A CODE?</Text>
+          {signedIn ? (
+            <CouponRedeem compact onRedeemed={handleRedeemed} />
+          ) : (
+            <Text style={styles.couponHint}>
+              Create an account to redeem a code for free workouts.
+            </Text>
+          )}
+        </View>
 
         {/* What you get */}
         <View style={styles.featuresBox}>
@@ -272,6 +296,26 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     lineHeight: 16,
     marginBottom: spacing.lg,
+  },
+  couponBox: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: spacing.lg,
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  couponTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 2,
+    marginBottom: spacing.md,
+  },
+  couponHint: {
+    fontSize: 13,
+    color: colors.textMuted,
+    lineHeight: 20,
   },
   featuresBox: {
     backgroundColor: colors.card,
