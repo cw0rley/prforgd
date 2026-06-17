@@ -65,6 +65,23 @@ function fromRow(row: any): WorkoutResult {
   };
 }
 
+// Immediately push a single just-saved result to the cloud, independent of the
+// debounced reconciler. Defense-in-depth: the moment this succeeds the workout
+// is safe in Supabase, so even if anything ever clobbered the local copy the
+// next pull restores it. No-op when logged out; best-effort when offline (the
+// dirty flag + next sync still cover that path). Idempotent (upsert by id).
+export async function pushResultNow(result: WorkoutResult): Promise<void> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return;
+    await supabase
+      .from('workout_results')
+      .upsert([toRow(result, userId)], { onConflict: 'user_id,id' });
+  } catch {
+    // best-effort; the reconciler retries via the dirty flag
+  }
+}
+
 export interface SyncStats {
   uploaded: number;
   downloaded: number;

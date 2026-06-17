@@ -40,6 +40,18 @@ function triggerSync(): void {
   }
 }
 
+// Fire-and-forget immediate cloud upload of a single saved result (no-op when
+// logged out). Belt-and-suspenders so a just-logged workout is safe in the
+// cloud instantly, not only after the debounced reconciler runs.
+function pushNow(result: WorkoutResult): void {
+  try {
+    const { pushResultNow } = require('../lib/sync');
+    void pushResultNow(result);
+  } catch {
+    // sync module unavailable — local write already succeeded
+  }
+}
+
 export async function getDeletedIds(): Promise<string[]> {
   return readJSON<string[]>(KEYS.resultsDeleted, []);
 }
@@ -59,13 +71,16 @@ export async function getResults(): Promise<WorkoutResult[]> {
 export async function saveResult(result: WorkoutResult): Promise<void> {
   // Locked read-modify-write so a concurrent sync can't overwrite this save
   // (and vice-versa). Guard against a double-save of the same id too.
+  let stamped: WorkoutResult | null = null;
   await withLock(KEYS.results, async () => {
     const results = await getResults();
     if (results.some((r) => r.id === result.id)) return;
-    results.push({ ...result, updatedAt: new Date().toISOString() });
+    stamped = { ...result, updatedAt: new Date().toISOString() };
+    results.push(stamped);
     await writeJSON(KEYS.results, results);
     await markDirty();
   });
+  if (stamped) pushNow(stamped); // immediate cloud upload (safety net)
   triggerSync();
 }
 
