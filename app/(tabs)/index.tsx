@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -47,6 +48,14 @@ export default function HomeScreen() {
       getFavorites().then(setFavorites);
     }, [])
   );
+
+  // Restore persisted filter toggles on mount.
+  useEffect(() => {
+    AsyncStorage.multiGet(['ui_filter_favorites', 'ui_filter_equipment']).then(([[, favs], [, equip]]) => {
+      if (favs === 'true') setFilterFavorites(true);
+      if (equip === 'true') setFilterByEquipment(true);
+    });
+  }, []);
 
   // Refresh after a background sync (e.g. data pulled from another device).
   useEffect(() => onSynced(() => {
@@ -141,7 +150,11 @@ export default function HomeScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
         <TouchableOpacity
           style={[styles.chip, filterFavorites && styles.chipActive]}
-          onPress={() => setFilterFavorites(!filterFavorites)}
+          onPress={() => {
+            const next = !filterFavorites;
+            setFilterFavorites(next);
+            AsyncStorage.setItem('ui_filter_favorites', String(next));
+          }}
         >
           <Text style={[styles.chipText, filterFavorites && styles.chipTextActive]}>Favs</Text>
         </TouchableOpacity>
@@ -151,7 +164,9 @@ export default function HomeScreen() {
             if (userEquipment.length === 0) {
               router.push('/(tabs)/equipment');
             } else {
-              setFilterByEquipment(!filterByEquipment);
+              const next = !filterByEquipment;
+              setFilterByEquipment(next);
+              AsyncStorage.setItem('ui_filter_equipment', String(next));
             }
           }}
         >

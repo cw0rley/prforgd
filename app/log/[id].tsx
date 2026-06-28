@@ -11,6 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { Toast, useToast } from '../../src/components/Toast';
+import { PRModal } from '../../src/components/PRModal';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { randomUUID } from 'expo-crypto';
@@ -116,6 +117,8 @@ export default function LogWorkoutScreen() {
   const [saving, setSaving] = useState(false);
   const [freeRemaining, setFreeRemaining] = useState<number | null>(null);
   const { toast, show: showToast, hide: hideToast } = useToast();
+  const [prModalVisible, setPrModalVisible] = useState(false);
+  const [prWodName, setPrWodName] = useState('');
 
   // "More below" scroll cue — true when workout content extends under the
   // pinned bottom band and the user hasn't scrolled to the end yet.
@@ -406,10 +409,10 @@ export default function LogWorkoutScreen() {
     setSaving(false);
 
     if (isPR) {
-      showToast('NEW PR! You set a new personal record!', 'success', 5000);
-      await new Promise(r => setTimeout(r, 2000));
+      setPrWodName(isCustom ? (customWod?.name || 'Custom WOD') : (heroWod?.name || ''));
+      setPrModalVisible(true);
+      return;
     }
-    // After saving, return to the main WODs screen.
     router.replace('/(tabs)');
   }
 
@@ -460,6 +463,11 @@ export default function LogWorkoutScreen() {
         onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
       >
         <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
+        <PRModal
+          visible={prModalVisible}
+          wodName={prWodName}
+          onClose={() => { setPrModalVisible(false); router.replace('/(tabs)'); }}
+        />
 
         <View style={styles.workoutBox}>
           <Text style={styles.workoutText}>{wod.workout}</Text>
