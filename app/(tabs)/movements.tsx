@@ -8,11 +8,11 @@ import {
   TextInput,
   Modal,
   Platform,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Movement } from '../../src/data/movements';
 import { getMovements } from '../../src/data/workoutData';
-import * as WebBrowser from 'expo-web-browser';
 import { colors, spacing } from '../../src/theme';
 
 const categoryLabels: Record<string, string> = {
@@ -137,8 +137,9 @@ export default function MovementsScreen() {
               <TouchableOpacity
                 style={{ backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginVertical: spacing.md }}
                 onPress={() => {
+                  const videoId = activeVideo.videoId;
                   setActiveVideo(null);
-                  WebBrowser.openBrowserAsync(`https://www.youtube.com/watch?v=${activeVideo.videoId}`);
+                  Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
                 }}
               >
                 <Text style={{ color: colors.background, fontSize: 14, fontWeight: '800', letterSpacing: 2 }}>WATCH ON YOUTUBE</Text>

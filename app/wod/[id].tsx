@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   Platform,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect, Stack } from 'expo-router';
 import { getWorkouts, findMovement } from '../../src/data/workoutData';
@@ -19,7 +20,6 @@ import {
   WorkoutResult,
   deleteResult,
 } from '../../src/storage/workoutStorage';
-import * as WebBrowser from 'expo-web-browser';
 import { colors, spacing } from '../../src/theme';
 
 export default function WodDetailScreen() {
@@ -216,8 +216,9 @@ export default function WodDetailScreen() {
               <TouchableOpacity
                 style={{ backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginVertical: spacing.md }}
                 onPress={() => {
+                  const videoId = activeVideo.videoId;
                   setActiveVideo(null);
-                  WebBrowser.openBrowserAsync(`https://www.youtube.com/watch?v=${activeVideo.videoId}`);
+                  Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
                 }}
               >
                 <Text style={{ color: colors.background, fontSize: 14, fontWeight: '800', letterSpacing: 2 }}>WATCH ON YOUTUBE</Text>
