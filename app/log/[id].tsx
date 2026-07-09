@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Switch,
   Platform,
   Modal,
 } from 'react-native';
@@ -26,6 +25,7 @@ import {
   WorkoutResult,
   RoundTime,
 } from '../../src/storage/workoutStorage';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../../src/theme';
 import { canSaveWorkout } from '../../src/lib/subscription';
 import { getSession } from '../../src/lib/auth';
@@ -578,24 +578,9 @@ export default function LogWorkoutScreen() {
           </View>
         )}
 
-        {/* Post-workout: status, Rx, notes, save */}
+        {/* Post-workout: notes */}
         {showPostWorkout && (
           <>
-            <View style={styles.section}>
-              <View style={styles.rxRow}>
-                <View>
-                  <Text style={styles.label}>Rx (AS PRESCRIBED)</Text>
-                  <Text style={styles.rxHint}>Weight, reps, and movements as written</Text>
-                </View>
-                <Switch
-                  value={rx}
-                  onValueChange={setRx}
-                  trackColor={{ false: colors.cardBorder, true: colors.primaryDark }}
-                  thumbColor={rx ? colors.primary : colors.textMuted}
-                />
-              </View>
-            </View>
-
             <View style={styles.section}>
               <Text style={styles.label}>NOTES</Text>
               <TextInput
@@ -620,24 +605,41 @@ export default function LogWorkoutScreen() {
             marking where content scrolls out of view. Hidden once scrolled to end. */}
         {moreBelow && (
           <View style={styles.scrollCue} pointerEvents="none">
-            <Text style={styles.scrollCueText}>⌄ more ⌄</Text>
+            <Ionicons name="chevron-down-circle" size={28} color={colors.primary} />
           </View>
         )}
         {/* Pinned live timer — always visible once the run starts */}
         {isTimerMode && timerStarted && (
           <View style={styles.timerBand}>
-            <Text
-              style={[
-                styles.timerBandTime,
-                isCountdown && !timeUp && remaining <= 10 && styles.timerWarn,
-                isCountdown && timeUp && styles.timerDone,
-                isCountdown && timeUp && !flashOn && styles.timerDim,
-              ]}
-            >
-              {isCountdown
-                ? (timeUp ? 'TIME!' : formatTimeFull(remaining))
-                : formatTimeFull(elapsedSeconds)}
-            </Text>
+            <View style={styles.timerBandRow}>
+              <View style={{ flex: 1 }} />
+              <Text
+                style={[
+                  styles.timerBandTime,
+                  isCountdown && !timeUp && remaining <= 10 && styles.timerWarn,
+                  isCountdown && timeUp && styles.timerDone,
+                  isCountdown && timeUp && !flashOn && styles.timerDim,
+                ]}
+              >
+                {isCountdown
+                  ? (timeUp ? 'TIME!' : formatTimeFull(remaining))
+                  : formatTimeFull(elapsedSeconds)}
+              </Text>
+              <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                {showPostWorkout && (
+                  <TouchableOpacity
+                    style={[styles.rxBtn, rx ? styles.rxBtnRx : styles.rxBtnScaled]}
+                    onPress={() => setRx(v => !v)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.rxBtnText, rx && styles.rxBtnTextRx]} numberOfLines={1}>
+                      {rx ? 'RX' : 'SCALED'}
+                    </Text>
+                    <Text style={styles.rxBtnSizer}>SCALED</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
             {isCountdown && !timeUp && (
               <Text style={styles.timerBandLabel}>{wod.timeCap} MIN AMRAP</Text>
             )}
@@ -650,6 +652,20 @@ export default function LogWorkoutScreen() {
         )}
         {showPostWorkout && freeRemaining !== null && freeRemaining > 0 && freeRemaining <= 10 && (
           <Text style={styles.freeCounter}>{freeRemaining} free workout{freeRemaining === 1 ? '' : 's'} remaining</Text>
+        )}
+        {showPostWorkout && !isTimerMode && (
+          <View style={styles.rxToggleRow}>
+            <TouchableOpacity
+              style={[styles.rxBtn, rx ? styles.rxBtnRx : styles.rxBtnScaled]}
+              onPress={() => setRx(v => !v)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.rxBtnText, rx && styles.rxBtnTextRx]} numberOfLines={1}>
+                {rx ? 'RX' : 'SCALED'}
+              </Text>
+              <Text style={styles.rxBtnSizer}>SCALED</Text>
+            </TouchableOpacity>
+          </View>
         )}
         <View style={styles.bottomBarButtons}>
           {isTimerMode && (
@@ -744,23 +760,11 @@ const styles = StyleSheet.create({
     paddingBottom: 220,
   },
 
-  // "More below" scroll cue — pill floating just above the fixed bottom band
+  // "More below" scroll cue — icon floating just above the fixed bottom band
   scrollCue: {
     position: 'absolute',
-    top: -16,
+    top: -18,
     alignSelf: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-  },
-  scrollCueText: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
   },
 
   // Pinned live-timer band (above the action buttons)
@@ -1128,14 +1132,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.xs,
   },
-  rxRow: {
+  timerBandRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  rxToggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: spacing.sm,
+  },
+  rxBtn: {
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     alignItems: 'center',
   },
-  rxHint: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
+  rxBtnRx: {
+    backgroundColor: colors.primary,
+  },
+  rxBtnScaled: {
+    backgroundColor: colors.cardBorder,
+  },
+  rxBtnText: {
+    position: 'absolute',
+    top: 7,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    color: colors.text,
+  },
+  rxBtnTextRx: {
+    color: colors.background,
+  },
+  rxBtnSizer: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    color: 'transparent',
   },
 });
