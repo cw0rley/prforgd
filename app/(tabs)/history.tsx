@@ -20,12 +20,14 @@ import {
   workoutDateMs,
   WorkoutResult,
 } from '../../src/storage/workoutStorage';
+import { getFavorites } from '../../src/storage/favoritesStorage';
 import { getWorkouts } from '../../src/data/workoutData';
 import { onSynced, requestSync } from '../../src/lib/sync';
 import { colors, spacing } from '../../src/theme';
 
 export default function HistoryScreen() {
   const [results, setResults] = useState<WorkoutResult[]>([]);
+  const [favWodIds, setFavWodIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<'all' | 'fav' | 'pr' | 'rx' | 'scaled'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const router = useRouter();
@@ -41,8 +43,9 @@ export default function HistoryScreen() {
   useEffect(() => onSynced(() => loadResults()), []);
 
   async function loadResults() {
-    const all = await getResults();
+    const [all, favIds] = await Promise.all([getResults(), getFavorites()]);
     setResults(all.sort((a, b) => workoutDateMs(b.date) - workoutDateMs(a.date)));
+    setFavWodIds(new Set(favIds));
   }
 
   async function handleDelete(resultId: string) {
@@ -129,7 +132,7 @@ export default function HistoryScreen() {
         )}
 
         {results.filter((r) => {
-          if (filter === 'fav') return r.favorite;
+          if (filter === 'fav') return favWodIds.has(r.wodId);
           if (filter === 'pr') return r.isPR;
           if (filter === 'rx') return r.rx;
           if (filter === 'scaled') return !r.rx;
