@@ -625,7 +625,7 @@ export default function LogWorkoutScreen() {
                   ? (timeUp ? 'TIME!' : formatTimeFull(remaining))
                   : formatTimeFull(elapsedSeconds)}
               </Text>
-              <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>
                 {showPostWorkout && (
                   <TouchableOpacity
                     style={[styles.rxBtn, rx ? styles.rxBtnRx : styles.rxBtnScaled]}
@@ -1138,13 +1138,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginBottom: spacing.sm,
+    width: '100%',
   },
   rxBtn: {
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 7,
     alignItems: 'center',
-    alignSelf: 'center',
   },
   rxBtnRx: {
     backgroundColor: colors.primary,
