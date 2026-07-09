@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { getResults, formatTime, formatWorkoutDate, WorkoutResult } from '../src/storage/workoutStorage';
 import { getWorkouts } from '../src/data/workoutData';
 import { colors, spacing } from '../src/theme';
@@ -83,8 +84,8 @@ export default function ExportScreen() {
       <Stack.Screen options={{
         title: 'Export Data',
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.replace('/')}>
-            <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
+          <TouchableOpacity onPress={() => router.replace('/')} style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
+            <Ionicons name="chevron-back" size={32} color={colors.primary} />
           </TouchableOpacity>
         ),
       }} />

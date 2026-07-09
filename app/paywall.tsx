@@ -9,6 +9,7 @@ import {
   Linking,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../src/theme';
 import { supabase } from '../src/lib/supabase';
 import { CouponRedeem } from '../src/components/CouponRedeem';
@@ -57,8 +58,8 @@ export default function PaywallScreen() {
       <Stack.Screen options={{
         title: '',
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={{ color: colors.primary, fontSize: 28, fontWeight: '300', paddingHorizontal: 12, paddingVertical: 4 }}>&#10094;</Text>
+          <TouchableOpacity onPress={() => router.back()} style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
+            <Ionicons name="chevron-back" size={32} color={colors.primary} />
           </TouchableOpacity>
         ),
       }} />
