@@ -632,10 +632,7 @@ export default function LogWorkoutScreen() {
                     onPress={() => setRx(v => !v)}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.rxBtnText, rx && styles.rxBtnTextRx]} numberOfLines={1}>
-                      {rx ? 'RX' : 'SCALED'}
-                    </Text>
-                    <Text style={styles.rxBtnSizer}>SCALED</Text>
+                    <Text style={[styles.rxBtnText, rx && styles.rxBtnTextRx]}>RX</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1156,11 +1153,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBorder,
   },
   rxBtnText: {
-    position: 'absolute',
-    top: 7,
-    left: 0,
-    right: 0,
-    textAlign: 'center',
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1.5,
@@ -1168,11 +1160,5 @@ const styles = StyleSheet.create({
   },
   rxBtnTextRx: {
     color: colors.background,
-  },
-  rxBtnSizer: {
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-    color: 'transparent',
   },
 });
