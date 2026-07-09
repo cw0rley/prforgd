@@ -1147,6 +1147,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     alignItems: 'center',
+    alignSelf: 'center',
   },
   rxBtnRx: {
     backgroundColor: colors.primary,
