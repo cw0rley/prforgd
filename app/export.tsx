@@ -85,7 +85,7 @@ export default function ExportScreen() {
         title: 'Export Data',
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.replace('/')} style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
-            <Ionicons name="chevron-back" size={32} color={colors.primary} />
+            <Ionicons name="chevron-back" size={32} color={colors.primary} style={{ transform: [{ translateX: -4 }] }} />
           </TouchableOpacity>
         ),
       }} />

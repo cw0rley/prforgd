@@ -450,7 +450,7 @@ export default function LogWorkoutScreen() {
         headerTitleStyle: { color: colors.text, fontWeight: 'bold', fontSize: 24 },
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()} style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
-            <Ionicons name="chevron-back" size={32} color={colors.primary} />
+            <Ionicons name="chevron-back" size={32} color={colors.primary} style={{ transform: [{ translateX: -4 }] }} />
           </TouchableOpacity>
         ),
       }} />
@@ -612,27 +612,32 @@ export default function LogWorkoutScreen() {
         {isTimerMode && timerStarted && (
           <View style={styles.timerBand}>
             <View style={styles.timerBandRow}>
-              <View style={{ flex: 1 }} />
-              <Text
-                style={[
-                  styles.timerBandTime,
-                  isCountdown && !timeUp && remaining <= 10 && styles.timerWarn,
-                  isCountdown && timeUp && styles.timerDone,
-                  isCountdown && timeUp && !flashOn && styles.timerDim,
-                ]}
-              >
-                {isCountdown
-                  ? (timeUp ? 'TIME!' : formatTimeFull(remaining))
-                  : formatTimeFull(elapsedSeconds)}
-              </Text>
-              <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>
+              {/* Fixed-width slot mirrors the RX slot so the time stays centered */}
+              <View style={styles.rxSlot} />
+              <View style={styles.timerFill}>
+                <Text
+                  style={[
+                    styles.timerBandTime,
+                    isCountdown && !timeUp && remaining <= 10 && styles.timerWarn,
+                    isCountdown && timeUp && styles.timerDone,
+                    isCountdown && timeUp && !flashOn && styles.timerDim,
+                  ]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {isCountdown
+                    ? (timeUp ? 'TIME!' : formatTimeFull(remaining))
+                    : formatTimeFull(elapsedSeconds)}
+                </Text>
+              </View>
+              <View style={styles.rxSlot}>
                 {showPostWorkout && (
                   <TouchableOpacity
                     style={[styles.rxBtn, rx ? styles.rxBtnRx : styles.rxBtnScaled]}
                     onPress={() => setRx(v => !v)}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.rxBtnText, rx && styles.rxBtnTextRx]}>RX</Text>
+                    <Text style={[styles.rxBtnText, rx && styles.rxBtnTextRx]} numberOfLines={1}>RX</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1134,6 +1139,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
+  // Center column that holds the time; shrinks the time (via adjustsFontSizeToFit)
+  // rather than the fixed RX slot when the clock runs past an hour.
+  timerFill: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Fixed-width slot so the RX pill never shrinks or wraps.
+  rxSlot: {
+    width: 60,
+    flexShrink: 0,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
   rxToggleRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -1145,6 +1164,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     alignItems: 'center',
+    flexShrink: 0,
   },
   rxBtnRx: {
     backgroundColor: colors.primary,

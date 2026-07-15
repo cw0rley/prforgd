@@ -77,7 +77,7 @@ export default function WodDetailScreen() {
         headerTitleStyle: { color: colors.text, fontWeight: 'bold', fontSize: 24 },
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()} style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
-            <Ionicons name="chevron-back" size={32} color={colors.primary} />
+            <Ionicons name="chevron-back" size={32} color={colors.primary} style={{ transform: [{ translateX: -4 }] }} />
           </TouchableOpacity>
         ),
       }} />
