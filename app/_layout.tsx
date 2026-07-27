@@ -9,6 +9,7 @@ import { supabase } from '../src/lib/supabase';
 import { initWorkoutData } from '../src/data/workoutData';
 import { migrateLegacyStorage } from '../src/lib/localStore';
 import { requestSync, subscribeRealtime } from '../src/lib/sync';
+import LandingGate from '../src/components/LandingGate';
 
 export default function RootLayout() {
   useKeepAwake();
@@ -80,6 +81,8 @@ export default function RootLayout() {
         <Stack.Screen name="help" options={{ title: 'User Manual' }} />
         <Stack.Screen name="paywall" options={{ title: '' }} />
       </Stack>
+      {/* Web-only marketing front page for logged-out visitors (no-op on native). */}
+      <LandingGate />
     </>
   );
 }

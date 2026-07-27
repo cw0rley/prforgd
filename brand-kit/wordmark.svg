@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="240" viewBox="0 0 600 240" role="img" aria-label="PR FORGD — Train. Track. Forge.">
+  <!-- Transparent background (no backing rect) -->
+
+  <!-- ============ Left badge ============ -->
+  <g>
+    <!-- navy tile -->
+    <rect x="34" y="45" width="150" height="150" rx="16" fill="#0B1D33"/>
+
+    <!-- green corner brackets (brand motif) -->
+    <g fill="none" stroke="#7FFF3B" stroke-width="4" stroke-linecap="square">
+      <path d="M50 74 L50 59 L65 59"/>
+      <path d="M153 59 L168 59 L168 74"/>
+      <path d="M50 166 L50 181 L65 181"/>
+      <path d="M153 181 L168 181 L168 166"/>
+    </g>
+
+    <!-- PR -->
+    <text x="109" y="118" text-anchor="middle"
+          font-family="'Arial Black','Helvetica Neue',Arial,sans-serif"
+          font-weight="900" font-size="58" letter-spacing="1" fill="#7FFF3B">PR</text>
+
+    <!-- divider line -->
+    <rect x="60" y="130" width="98" height="3" fill="#FFFFFF"/>
+
+    <!-- FORGD -->
+    <text x="109" y="160" text-anchor="middle"
+          font-family="'Arial Black','Helvetica Neue',Arial,sans-serif"
+          font-weight="900" font-size="24" letter-spacing="3" fill="#FFFFFF">FORGD</text>
+
+    <!-- bottom green accent -->
+    <rect x="74" y="171" width="70" height="3" fill="#7FFF3B"/>
+  </g>
+
+  <!-- ============ Wordmark ============ -->
+  <text x="210" y="112"
+        font-family="'Arial Black','Helvetica Neue',Arial,sans-serif"
+        font-weight="900" font-size="52" letter-spacing="3" fill="#0B1D33">PR FORGD</text>
+
+  <!-- tagline -->
+  <text x="212" y="150"
+        font-family="'Arial Black','Helvetica Neue',Arial,sans-serif"
+        font-weight="900" font-size="21" letter-spacing="4" fill="#7FFF3B">TRAIN. TRACK. FORGE.</text>
+</svg>

@@ -305,6 +305,17 @@ Branded templates are in `email-templates/` (same folder as this file):
 - [ ] Reset Password (if customized)
 - [ ] Invite User (if customized)
 
+**⚠️ Set Email OTP Length to 6 (REQUIRED — breaks signup otherwise):**
+
+The app's email-confirmation flow is hard-coded to a **6-digit** code (`app/(tabs)/profile.tsx` — `maxLength={6}`). If Supabase sends any other length, the input can't fit the code and new users get stuck at the verify step. A fresh/migrated project may default to 8.
+
+1. Go to **Authentication** → **Sign In / Providers** → **Email**
+2. Find **Email OTP Length** → set it to **6** → **Save**
+3. Also confirm **Confirm email** is **ON** (otherwise no code is sent and users are signed in immediately, bypassing the verify step)
+
+- [ ] Email OTP Length = 6
+- [ ] Confirm email is ON
+
 **Set up Custom SMTP** (so auth emails come from `noreply@prforgd.com` instead of Supabase's default):
 
 On the same **Emails** page, scroll down to **SMTP Settings**:
