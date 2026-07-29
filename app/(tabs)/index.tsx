@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -17,6 +16,7 @@ import { getPRForWod, formatTime, WorkoutResult } from '../../src/storage/workou
 import { getUserEquipment } from '../../src/storage/equipmentStorage';
 import { getFavorites, toggleFavorite } from '../../src/storage/favoritesStorage';
 import { onSynced } from '../../src/lib/sync';
+import { getFilterPrefs, pullFilterPrefs, setFilterPrefs } from '../../src/lib/uiPrefs';
 import { colors, spacing } from '../../src/theme';
 
 const categoryLabels: Record<string, string> = {
@@ -41,28 +41,40 @@ export default function HomeScreen() {
   const [branchFilter, setBranchFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
 
+  // Restore the per-user filter toggles. Reads the fast local copy, then
+  // reconciles with the cloud. Runs on focus AND after every sync (not just once
+  // on mount) so it re-reads with the correct user namespace once the session has
+  // resolved — otherwise the very first read can hit the logged-out bucket during
+  // the brief post-login window and show the toggles as OFF.
+  const loadFilterPrefs = useCallback(() => {
+    getFilterPrefs().then((p) => {
+      setFilterFavorites(p.filterFavorites);
+      setFilterByEquipment(p.filterEquipment);
+    });
+    pullFilterPrefs().then((p) => {
+      if (!p) return;
+      setFilterFavorites(p.filterFavorites);
+      setFilterByEquipment(p.filterEquipment);
+    });
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadPRs();
       getUserEquipment().then(setUserEquipment);
       getFavorites().then(setFavorites);
-    }, [])
+      loadFilterPrefs();
+    }, [loadFilterPrefs])
   );
 
-  // Restore persisted filter toggles on mount.
-  useEffect(() => {
-    AsyncStorage.multiGet(['ui_filter_favorites', 'ui_filter_equipment']).then(([[, favs], [, equip]]) => {
-      if (favs === 'true') setFilterFavorites(true);
-      if (equip === 'true') setFilterByEquipment(true);
-    });
-  }, []);
-
-  // Refresh after a background sync (e.g. data pulled from another device).
+  // Refresh after a background sync (e.g. data pulled from another device, or the
+  // post-login sync once the session is established).
   useEffect(() => onSynced(() => {
     loadPRs();
     getUserEquipment().then(setUserEquipment);
     getFavorites().then(setFavorites);
-  }), []);
+    loadFilterPrefs();
+  }), [loadFilterPrefs]);
 
   async function loadPRs() {
     const prMap: Record<string, WorkoutResult | null> = {};
@@ -153,7 +165,7 @@ export default function HomeScreen() {
           onPress={() => {
             const next = !filterFavorites;
             setFilterFavorites(next);
-            AsyncStorage.setItem('ui_filter_favorites', String(next));
+            setFilterPrefs({ filterFavorites: next });
           }}
         >
           <Text style={[styles.chipText, filterFavorites && styles.chipTextActive]}>Favs</Text>
@@ -166,7 +178,7 @@ export default function HomeScreen() {
             } else {
               const next = !filterByEquipment;
               setFilterByEquipment(next);
-              AsyncStorage.setItem('ui_filter_equipment', String(next));
+              setFilterPrefs({ filterEquipment: next });
             }
           }}
         >

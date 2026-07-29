@@ -21,6 +21,7 @@ import {
   WorkoutResult,
   deleteResult,
 } from '../../src/storage/workoutStorage';
+import { isFavorite, toggleFavorite } from '../../src/storage/favoritesStorage';
 import { colors, spacing } from '../../src/theme';
 
 export default function WodDetailScreen() {
@@ -29,6 +30,7 @@ export default function WodDetailScreen() {
   const wod = getWorkouts().find((w) => w.id === id);
   const [results, setResults] = useState<WorkoutResult[]>([]);
   const [pr, setPr] = useState<WorkoutResult | null>(null);
+  const [fav, setFav] = useState(false);
   const [activeVideo, setActiveVideo] = useState<{ name: string; videoId: string } | null>(null);
 
   useFocusEffect(
@@ -38,12 +40,18 @@ export default function WodDetailScreen() {
   );
 
   async function loadData() {
-    const [r, p] = await Promise.all([
+    const [r, p, f] = await Promise.all([
       getResultsForWod(id!),
       getPRForWod(id!),
+      isFavorite(id!),
     ]);
     setResults(r);
     setPr(p);
+    setFav(f);
+  }
+
+  async function handleToggleFav() {
+    setFav(await toggleFavorite(id!));
   }
 
   async function handleDelete(resultId: string) {
@@ -80,6 +88,16 @@ export default function WodDetailScreen() {
             <Ionicons name="chevron-back" size={32} color={colors.primary} style={{ transform: [{ translateX: -4 }] }} />
           </TouchableOpacity>
         ),
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={handleToggleFav}
+            style={{ paddingHorizontal: 12, paddingVertical: 10 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={fav ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <Ionicons name={fav ? 'star' : 'star-outline'} size={28} color={fav ? colors.prGold : colors.textMuted} />
+          </TouchableOpacity>
+        ),
       }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {wod.hero ? <Text style={styles.heroName}>{wod.hero}</Text> : null}
@@ -109,6 +127,11 @@ export default function WodDetailScreen() {
             );
           })}
         </View>
+
+        <TouchableOpacity style={styles.leaderboardBtn} onPress={() => router.push(`/leaderboard/${wod.id}`)}>
+          <Ionicons name="trophy-outline" size={18} color={colors.prGold} />
+          <Text style={styles.leaderboardBtnText}>VIEW LEADERBOARD</Text>
+        </TouchableOpacity>
 
         {pr && (
           <View style={styles.prBox}>
@@ -316,6 +339,23 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     fontWeight: '600',
+  },
+  leaderboardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.prGold,
+  },
+  leaderboardBtnText: {
+    color: colors.prGold,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   prBox: {
     backgroundColor: '#002B12',

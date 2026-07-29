@@ -14,13 +14,15 @@ import { saveGeneratedWod } from '../../src/storage/generatedWodStorage';
 import {
   getResults,
   deleteResult,
-  toggleFavorite,
+  setResultPublic,
   formatTime,
   formatWorkoutDate,
   workoutDateMs,
   WorkoutResult,
 } from '../../src/storage/workoutStorage';
-import { getFavorites } from '../../src/storage/favoritesStorage';
+import { getFavorites, toggleFavorite } from '../../src/storage/favoritesStorage';
+import { getProfile } from '../../src/storage/profileStorage';
+import { formatResultText, shareResultText } from '../../src/lib/share';
 import { getWorkouts } from '../../src/data/workoutData';
 import { onSynced, requestSync } from '../../src/lib/sync';
 import { colors, spacing } from '../../src/theme';
@@ -81,6 +83,46 @@ export default function HistoryScreen() {
     if (r.wodName) return r.wodName;
     if (r.wodId.startsWith('custom-')) return 'Custom WOD';
     return getWorkouts().find((w) => w.id === r.wodId)?.name || r.wodId;
+  }
+
+  async function handleShare(r: WorkoutResult) {
+    const wod = getWorkouts().find((w) => w.id === r.wodId);
+    const text = formatResultText({
+      wodName: getWodName(r),
+      wodId: r.wodId,
+      workout: wod?.workout || r.wodDescription,
+      timeSeconds: r.timeSeconds,
+      rounds: r.rounds,
+      reps: r.reps,
+      rx: r.rx,
+    });
+    const outcome = await shareResultText(text);
+    if (outcome === 'copied') {
+      if (Platform.OS === 'web') window.alert('Result copied to clipboard!');
+      else Alert.alert('Copied', 'Result copied to clipboard.');
+    }
+  }
+
+  async function handleToggleLeaderboard(r: WorkoutResult) {
+    // Removing is always allowed.
+    if (r.isPublic) {
+      await setResultPublic(r.id, false);
+      loadResults();
+      return;
+    }
+    // Submitting requires a public athlete profile (username) for the entry.
+    const profile = await getProfile();
+    if (!profile) {
+      const msg = 'Set up your athlete profile (username) on the Me tab before submitting to the leaderboard.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Profile needed', msg);
+      return;
+    }
+    await setResultPublic(r.id, true);
+    loadResults();
+    const done = 'Submitted to the leaderboard!';
+    if (Platform.OS === 'web') window.alert(done);
+    else Alert.alert('Done', done);
   }
 
   return (
@@ -149,13 +191,13 @@ export default function HistoryScreen() {
                 <TouchableOpacity
                   onPress={async (e) => {
                     e.stopPropagation();
-                    await toggleFavorite(r.id);
+                    await toggleFavorite(r.wodId);
                     loadResults();
                   }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Text style={r.favorite ? styles.favStar : styles.favStarEmpty}>
-                    {r.favorite ? '★' : '☆'}
+                  <Text style={favWodIds.has(r.wodId) ? styles.favStar : styles.favStarEmpty}>
+                    {favWodIds.has(r.wodId) ? '★' : '☆'}
                   </Text>
                 </TouchableOpacity>
                 <Text style={styles.wodName}>{getWodName(r)}</Text>
@@ -216,6 +258,25 @@ export default function HistoryScreen() {
                   <TouchableOpacity style={styles.doAgainBtnLog} onPress={() => doAgain(r, 'log')}>
                     <Text style={styles.doAgainTextLog}>LOG</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity style={styles.shareBtn} onPress={() => handleShare(r)}>
+                    <Ionicons name="share-outline" size={14} color={colors.primary} />
+                    <Text style={styles.shareText}>SHARE</Text>
+                  </TouchableOpacity>
+                  {r.rx && (
+                    <TouchableOpacity
+                      style={r.isPublic ? styles.leaderboardBtnOn : styles.leaderboardBtn}
+                      onPress={() => handleToggleLeaderboard(r)}
+                    >
+                      <Ionicons
+                        name={r.isPublic ? 'trophy' : 'trophy-outline'}
+                        size={14}
+                        color={r.isPublic ? colors.background : colors.prGold}
+                      />
+                      <Text style={r.isPublic ? styles.leaderboardTextOn : styles.leaderboardText}>
+                        {r.isPublic ? 'ON BOARD' : 'LEADERBOARD'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(r.id)}>
                     <Text style={styles.deleteText}>DELETE</Text>
                   </TouchableOpacity>
@@ -432,8 +493,43 @@ const styles = StyleSheet.create({
   },
   doAgainRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.sm,
+  },
+  leaderboardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.card,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.prGold,
+  },
+  leaderboardText: {
+    color: colors.prGold,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  leaderboardBtnOn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.prGold,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.prGold,
+  },
+  leaderboardTextOn: {
+    color: colors.background,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   doAgainBtn: {
     backgroundColor: colors.success,
@@ -456,6 +552,23 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   doAgainTextLog: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.card,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  shareText: {
     color: colors.primary,
     fontSize: 12,
     fontWeight: '800',

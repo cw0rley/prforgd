@@ -27,6 +27,7 @@ export interface WorkoutResult {
   rx: boolean; // did it at prescribed weights/movements?
   isPR: boolean;
   favorite?: boolean;
+  isPublic?: boolean; // opted in to the public leaderboard (Rx results only)
   updatedAt?: string; // ISO; drives last-write-wins during sync
 }
 
@@ -125,6 +126,24 @@ export async function toggleFavorite(resultId: string): Promise<boolean> {
   result.favorite = !result.favorite;
   await writeJSON(KEYS.results, results);
   return result.favorite; // result-level flag is local-only (no cloud column)
+}
+
+// Opt a result in/out of the public leaderboard. Bumps updatedAt so the change
+// wins last-write-wins, then pushes to the cloud (the `is_public` column).
+export async function setResultPublic(resultId: string, isPublic: boolean): Promise<void> {
+  let stamped: WorkoutResult | null = null;
+  await withLock(KEYS.results, async () => {
+    const results = await getResults();
+    const result = results.find((r) => r.id === resultId);
+    if (!result) return;
+    result.isPublic = isPublic;
+    result.updatedAt = new Date().toISOString();
+    stamped = result;
+    await writeJSON(KEYS.results, results);
+    await markDirty();
+  });
+  if (stamped) pushNow(stamped);
+  triggerSync();
 }
 
 export async function deleteResult(resultId: string): Promise<void> {

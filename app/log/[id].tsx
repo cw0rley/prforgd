@@ -25,6 +25,7 @@ import {
   WorkoutResult,
   RoundTime,
 } from '../../src/storage/workoutStorage';
+import { formatResultText, shareResultText } from '../../src/lib/share';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../../src/theme';
 import { canSaveWorkout } from '../../src/lib/subscription';
@@ -416,6 +417,31 @@ export default function LogWorkoutScreen() {
     router.replace('/(tabs)');
   }
 
+  async function handleShare() {
+    let timeSeconds: number | undefined;
+    let roundsNum: number | undefined;
+    let repsNum: number | undefined;
+    if (isAmrap) {
+      roundsNum = parseInt(rounds || '0');
+      repsNum = parseInt(reps || '0');
+    } else if (isTimerMode) {
+      timeSeconds = elapsedSeconds;
+    } else {
+      timeSeconds = (parseInt(minutes || '0') * 60) + parseInt(seconds || '0');
+    }
+    const text = formatResultText({
+      wodName: isCustom ? (customWod?.name || 'Custom WOD') : (heroWod?.name || 'WOD'),
+      wodId: isCustom ? undefined : heroWod?.id,
+      workout: wod?.workout,
+      timeSeconds,
+      rounds: roundsNum,
+      reps: repsNum,
+      rx,
+    });
+    const outcome = await shareResultText(text);
+    if (outcome === 'copied') showToast('Result copied to clipboard!', 'success');
+  }
+
   function formatTimeFull(totalSec: number): string {
     const hrs = Math.floor(totalSec / 3600);
     const mins = Math.floor((totalSec % 3600) / 60);
@@ -736,6 +762,12 @@ export default function LogWorkoutScreen() {
             </TouchableOpacity>
           )}
 
+          {showPostWorkout && (
+            <TouchableOpacity style={styles.bottomBtnShare} onPress={handleShare}>
+              <Ionicons name="share-outline" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          )}
+
           {!isTimerMode && !showPostWorkout && (
             <View />
           )}
@@ -904,6 +936,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 2,
+  },
+  bottomBtnShare: {
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   bottomBtnOutlineGreen: {
     flex: 1,

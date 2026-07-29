@@ -10,20 +10,52 @@ import {
   Linking,
   useWindowDimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { colors, spacing } from '../theme';
 
-// Web-only marketing "front page". Shown to logged-out visitors on prforgd.com
-// before they enter the app. It's a SOFT gate — "Explore the app" dismisses it
-// and lets people browse without an account; logging/saving still prompts login
-// downstream via the existing paywall/free-limit flow.
+// Web-only marketing "front page". This is a HARD gate: logged-out visitors on
+// prforgd.com always see it and cannot browse the app — the only routes reachable
+// while signed out are the login screen (/profile) and the public info pages
+// (/privacy, /help) linked from the landing itself. Signing in reveals the app.
 //
 // Never shown on native (users already installed from the App/Play store) or to
-// anyone with an active session. Dismissal is remembered for the browser tab
-// session so a refresh mid-use doesn't bounce the user back here.
-const ENTERED_KEY = 'entered_app';
+// anyone with an active session.
+
+// True if a persisted Supabase auth token is present in web storage (i.e. the
+// visitor is signed in). Cheap enough to call on every render.
+function hasAuthToken(): boolean {
+  if (Platform.OS !== 'web') return false;
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      // Matches `sb-<ref>-auth-token` and chunked variants (`…-auth-token.0`),
+      // but not the PKCE `…-auth-token-code-verifier` (present mid-OAuth, pre-login).
+      if (k && k.startsWith('sb-') && /auth-token(\.\d+)?$/.test(k)) return true;
+    }
+  } catch {
+    // storage blocked (private mode) — assume logged out.
+  }
+  return false;
+}
+
+// True during an OAuth (e.g. Google) redirect-back: the provider returns to the
+// site with the tokens in the URL hash before the root layout has called
+// setSession(), so the auth token isn't in storage yet. Treat this as logged-in
+// so the gate never flashes the landing between the redirect and setSession.
+function hasOAuthCallback(): boolean {
+  if (Platform.OS !== 'web') return false;
+  try {
+    return typeof window !== 'undefined' && window.location.hash.includes('access_token');
+  } catch {
+    return false;
+  }
+}
+
+// App store listings — official download badges link here.
+const APP_STORE_URL = 'https://apps.apple.com/us/app/prforgd/id6774586516';
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.prforgd.app';
 
 // ---- Editable marketing content -------------------------------------------
 // Everything below is placeholder copy — tweak freely.
@@ -68,51 +100,53 @@ export default function LandingGate() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width > 900;
-  const [show, setShow] = useState(false);
+  const pathname = usePathname();
+
+  // Hard gate: logged-out web visitors ALWAYS see the landing page and cannot
+  // browse the app. The only routes reachable while logged out are the login
+  // screen and the public info pages linked from the landing itself.
+  const PUBLIC_ROUTES = ['/profile', '/privacy', '/help'];
+
+  // "Logged in" is STICKY: seeded synchronously from the persisted auth token so
+  // a signed-in visitor never sees the landing flash on load, and only ever
+  // cleared by an explicit SIGNED_OUT event. This avoids the transient gate flash
+  // during the login → app navigation, where the session object and the token
+  // write can briefly lag the route change.
+  const [authed, setAuthed] = useState<boolean>(() => hasAuthToken() || hasOAuthCallback());
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
-    let active = true;
-    try {
-      if (window.sessionStorage.getItem(ENTERED_KEY) === '1') return;
-    } catch {
-      // sessionStorage can throw in private-mode/embedded contexts — just show.
-    }
-    // Don't flash the landing for signed-in users: only reveal once we've
-    // confirmed there's no session.
-    supabase.auth.getSession().then(({ data }) => {
-      if (active && !data.session) setShow(true);
+    // getSession only ever confirms logged-IN — it must not flip us back to the
+    // gate (a stale null from a pre-login read would cause exactly the flash).
+    supabase.auth.getSession().then(({ data }) => { if (data.session) setAuthed(true); });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === 'SIGNED_OUT') setAuthed(false);
+      else if (s) setAuthed(true);
     });
-    return () => {
-      active = false;
-    };
+    return () => sub.subscription.unsubscribe();
   }, []);
 
-  function dismiss() {
-    try {
-      window.sessionStorage.setItem(ENTERED_KEY, '1');
-    } catch {
-      // ignore — worst case the page shows again on next hard refresh
-    }
-    setShow(false);
-  }
+  const loggedIn = authed || hasAuthToken();
 
   function getStarted() {
-    dismiss();
-    router.push('/profile');
+    router.push('/profile'); // the gate auto-hides on the /profile route
   }
 
-  if (Platform.OS !== 'web' || !show) return null;
+  const gated =
+    Platform.OS === 'web' && !loggedIn && !PUBLIC_ROUTES.includes(pathname);
+  if (!gated) return null;
 
   return (
     <View style={styles.overlay}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator>
         {/* ---- Top nav ---- */}
         <View style={[styles.nav, { maxWidth: CONTENT_MAX }]}>
-          <View style={styles.brandRow}>
-            <Image source={require('../../brand-kit/png/icon-512.png')} style={styles.navLogo} resizeMode="contain" />
-            <Text style={styles.brand}>PRForgd</Text>
-          </View>
+          <Image
+            source={require('../../assets/header-landing.svg')}
+            style={[styles.navHeader, isDesktop && styles.navHeaderDesktop]}
+            resizeMode="contain"
+            accessibilityLabel="PR FORGD"
+          />
           <Pressable onPress={getStarted} style={({ pressed }) => pressed && styles.pressed}>
             <Text style={styles.navSignIn}>Sign in</Text>
           </Pressable>
@@ -133,10 +167,8 @@ export default function LandingGate() {
               <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]} onPress={getStarted}>
                 <Text style={styles.primaryText}>Get started — it's free</Text>
               </Pressable>
-              <Pressable style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]} onPress={dismiss}>
-                <Text style={styles.secondaryText}>Explore the app →</Text>
-              </Pressable>
             </View>
+            <StoreBadges center={!isDesktop} />
           </View>
 
           {/* Phone mockup */}
@@ -206,25 +238,75 @@ export default function LandingGate() {
           <Pressable style={({ pressed }) => [styles.primaryBtn, styles.ctaBtn, pressed && styles.pressed]} onPress={getStarted}>
             <Text style={styles.primaryText}>Get started — it's free</Text>
           </Pressable>
+          <StoreBadges center />
         </View>
 
         {/* ---- Footer ---- */}
         <View style={[styles.footer, { maxWidth: CONTENT_MAX }]}>
           <View style={styles.footerLinks}>
-            <Pressable onPress={() => { dismiss(); router.push('/privacy'); }}>
+            <Pressable onPress={() => router.push('/privacy')}>
               <Text style={styles.footerLink}>Privacy</Text>
             </Pressable>
-            <Pressable onPress={() => { dismiss(); router.push('/help'); }}>
+            <Pressable onPress={() => router.push('/help')}>
               <Text style={styles.footerLink}>User manual</Text>
             </Pressable>
             <Pressable onPress={() => Linking.openURL('mailto:info@prforgd.com')}>
               <Text style={styles.footerLink}>Contact</Text>
             </Pressable>
           </View>
+          <View style={styles.footerSocials}>
+            <SocialIcon icon="logo-instagram" label="PRForgd on Instagram" url="https://instagram.com/prforgd" />
+            <SocialIcon icon="logo-tiktok" label="PRForgd on TikTok" url="https://tiktok.com/@prforgd" />
+            <SocialIcon icon="logo-twitter" label="PRForgd on X" url="https://x.com/prforgd" />
+            <SocialIcon icon="logo-facebook" label="PRForgd on Facebook" url="https://www.facebook.com/profile.php?id=61592368778476" />
+          </View>
           <Text style={styles.footerCopy}>© 2026 PRForgd · Built for the CrossFit community</Text>
         </View>
       </ScrollView>
     </View>
+  );
+}
+
+// Official App Store / Google Play download badges.
+function StoreBadges({ center }: { center?: boolean }) {
+  return (
+    <View style={[styles.storeBadges, center && styles.storeBadgesCenter]}>
+      <Pressable
+        onPress={() => Linking.openURL(APP_STORE_URL)}
+        accessibilityRole="link"
+        accessibilityLabel="Download PRForgd on the App Store"
+        style={({ pressed }) => pressed && styles.pressed}
+      >
+        <Image source={require('../../assets/badges/app-store.svg')} style={styles.badgeApple} resizeMode="contain" />
+      </Pressable>
+      <Pressable
+        onPress={() => Linking.openURL(PLAY_STORE_URL)}
+        accessibilityRole="link"
+        accessibilityLabel="Get PRForgd on Google Play"
+        style={({ pressed }) => pressed && styles.pressed}
+      >
+        <Image source={require('../../assets/badges/google-play.png')} style={styles.badgeGoogle} resizeMode="contain" />
+      </Pressable>
+    </View>
+  );
+}
+
+// Footer social link — an icon that brightens on hover (web) / press.
+function SocialIcon({ icon, label, url }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; url: string }) {
+  const [active, setActive] = useState(false);
+  return (
+    <Pressable
+      onPress={() => Linking.openURL(url)}
+      onHoverIn={() => setActive(true)}
+      onHoverOut={() => setActive(false)}
+      onPressIn={() => setActive(true)}
+      onPressOut={() => setActive(false)}
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      hitSlop={8}
+    >
+      <Ionicons name={icon} size={34} color={active ? colors.primary : colors.textSecondary} />
+    </Pressable>
   );
 }
 
@@ -288,23 +370,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: 0,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center' },
   navLogo: { width: 34, height: 34, marginRight: spacing.sm },
   brand: { color: colors.text, fontSize: 20, fontWeight: '800', letterSpacing: 0.5 },
+  navHeader: { width: 345, height: 110 },
+  navHeaderDesktop: { width: 530, height: 170 },
   navSignIn: { color: colors.primary, fontSize: 15, fontWeight: '800' },
 
   // Hero
   hero: {
     width: '100%',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: 0,
     paddingBottom: spacing.xl,
     alignItems: 'center',
   },
-  heroDesktop: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: spacing.xl },
+  heroDesktop: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: spacing.sm },
   heroCopy: { width: '100%', alignItems: 'center' },
   heroCopyDesktop: { flex: 1, alignItems: 'flex-start', paddingRight: spacing.xl },
   eyebrow: { color: colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: spacing.sm },
@@ -431,5 +515,13 @@ const styles = StyleSheet.create({
   footer: { width: '100%', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.cardBorder },
   footerLinks: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.lg, marginBottom: spacing.sm },
   footerLink: { color: colors.textSecondary, fontSize: 14, fontWeight: '700' },
+  footerSocials: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, marginBottom: spacing.md },
+  // Store badges
+  storeBadges: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md, marginTop: spacing.lg },
+  storeBadgesCenter: { justifyContent: 'center' },
+  badgeApple: { width: 156, height: 52 },
+  // Google's official badge PNG bakes in ~1/8 transparent padding top & bottom,
+  // so its box is enlarged to make the visible button match the Apple badge.
+  badgeGoogle: { width: 183, height: 71 },
   footerCopy: { color: colors.textMuted, fontSize: 12, textAlign: 'center' },
 });

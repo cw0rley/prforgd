@@ -42,6 +42,7 @@ function toRow(r: WorkoutResult, userId: string) {
     completed: r.completed !== false,
     rx: r.rx,
     is_pr: r.isPR,
+    is_public: r.isPublic ?? false,
     updated_at: localUpdatedAt(r),
   };
 }
@@ -61,6 +62,7 @@ function fromRow(row: any): WorkoutResult {
     completed: row.completed,
     rx: row.rx,
     isPR: row.is_pr,
+    isPublic: row.is_public ?? false,
     updatedAt: row.updated_at ?? undefined,
   };
 }

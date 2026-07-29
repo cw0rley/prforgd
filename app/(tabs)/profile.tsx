@@ -25,6 +25,7 @@ import { refreshCouponBonus } from '../../src/lib/subscription';
 import { colors, spacing } from '../../src/theme';
 import { Toast, useToast } from '../../src/components/Toast';
 import { CouponRedeem } from '../../src/components/CouponRedeem';
+import { AthleteProfile } from '../../src/components/AthleteProfile';
 
 // Completes any pending auth session if the app was reopened via the
 // OAuth redirect (no-op otherwise). Must run at module scope.
@@ -395,6 +396,8 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <AthleteProfile onToast={showToast} />
+
         <CouponRedeem onRedeemed={() => loadStats()} />
 
         <TouchableOpacity
@@ -460,6 +463,10 @@ export default function ProfileScreen() {
         <Toast message={toast.message} type={toast.type} visible={toast.visible} onDismiss={hideToast} />
 
         <View style={web.card}>
+          <Pressable style={web.backLink} onPress={() => router.replace('/')} hitSlop={8}>
+            <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
+            <Text style={web.backLinkText}>Back to home</Text>
+          </Pressable>
           <View style={web.titleRow}>
             <Image source={require('../../brand-kit/png/icon-256.png')} style={web.logo} />
             <View style={web.titleCol}>
@@ -983,6 +990,18 @@ const web = StyleSheet.create({
   signedInColumn: {
     width: '100%',
     maxWidth: 480,
+  },
+  backLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginBottom: spacing.md,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } as any : {}),
+  },
+  backLinkText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
   },
   titleRow: {
     flexDirection: 'row',
