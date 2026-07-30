@@ -251,20 +251,22 @@ export default function HistoryScreen() {
                 {r.notes ? <Text style={styles.notes}>{r.notes}</Text> : null}
 
                 {/* Action buttons */}
-                <View style={styles.doAgainRow}>
-                  <TouchableOpacity style={styles.doAgainBtn} onPress={() => doAgain(r, 'timer')}>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity style={[styles.actionBtn, styles.doAgainBtn]} onPress={() => doAgain(r, 'timer')}>
                     <Text style={styles.doAgainText}>DO AGAIN</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.doAgainBtnLog} onPress={() => doAgain(r, 'log')}>
+                  <TouchableOpacity style={[styles.actionBtn, styles.doAgainBtnLog]} onPress={() => doAgain(r, 'log')}>
                     <Text style={styles.doAgainTextLog}>LOG</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.shareBtn} onPress={() => handleShare(r)}>
+                </View>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity style={[styles.actionBtn, styles.shareBtn]} onPress={() => handleShare(r)}>
                     <Ionicons name="share-outline" size={14} color={colors.primary} />
                     <Text style={styles.shareText}>SHARE</Text>
                   </TouchableOpacity>
                   {r.rx && (
                     <TouchableOpacity
-                      style={r.isPublic ? styles.leaderboardBtnOn : styles.leaderboardBtn}
+                      style={[styles.actionBtn, r.isPublic ? styles.leaderboardBtnOn : styles.leaderboardBtn]}
                       onPress={() => handleToggleLeaderboard(r)}
                     >
                       <Ionicons
@@ -273,11 +275,11 @@ export default function HistoryScreen() {
                         color={r.isPublic ? colors.background : colors.prGold}
                       />
                       <Text style={r.isPublic ? styles.leaderboardTextOn : styles.leaderboardText}>
-                        {r.isPublic ? 'ON BOARD' : 'LEADERBOARD'}
+                        {r.isPublic ? 'ON BOARD' : 'BOARD'}
                       </Text>
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(r.id)}>
+                  <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDelete(r.id)}>
                     <Text style={styles.deleteText}>DELETE</Text>
                   </TouchableOpacity>
                 </View>
@@ -491,51 +493,26 @@ const styles = StyleSheet.create({
     color: colors.text,
     lineHeight: 22,
   },
-  doAgainRow: {
+  // Two tidy rows of equal-width action buttons.
+  actionRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
-  leaderboardBtn: {
+  actionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
-    backgroundColor: colors.card,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: colors.prGold,
-  },
-  leaderboardText: {
-    color: colors.prGold,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  leaderboardBtnOn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.prGold,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: colors.prGold,
-  },
-  leaderboardTextOn: {
-    color: colors.background,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
   },
   doAgainBtn: {
     backgroundColor: colors.success,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 6,
+    borderColor: colors.success,
   },
   doAgainText: {
     color: colors.background,
@@ -545,10 +522,6 @@ const styles = StyleSheet.create({
   },
   doAgainBtnLog: {
     backgroundColor: colors.card,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
     borderColor: colors.primary,
   },
   doAgainTextLog: {
@@ -558,34 +531,43 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   shareBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     backgroundColor: colors.card,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
     borderColor: colors.primary,
   },
   shareText: {
     color: colors.primary,
     fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+  },
+  leaderboardBtn: {
+    backgroundColor: colors.card,
+    borderColor: colors.prGold,
+  },
+  leaderboardText: {
+    color: colors.prGold,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  leaderboardBtnOn: {
+    backgroundColor: colors.prGold,
+    borderColor: colors.prGold,
+  },
+  leaderboardTextOn: {
+    color: colors.background,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   deleteBtn: {
     backgroundColor: colors.card,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
     borderColor: colors.danger,
   },
   deleteText: {
     color: colors.danger,
     fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
 });
