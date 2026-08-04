@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   StyleSheet,
   Alert,
   Platform,
@@ -31,6 +32,7 @@ export default function HistoryScreen() {
   const [results, setResults] = useState<WorkoutResult[]>([]);
   const [favWodIds, setFavWodIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<'all' | 'fav' | 'pr' | 'rx' | 'scaled'>('all');
+  const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const router = useRouter();
 
@@ -169,17 +171,43 @@ export default function HistoryScreen() {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.searchRow}>
+          <Ionicons name="search" size={16} color={colors.textMuted} />
+          <TextInput
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search log by workout name"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+
         {results.length === 0 && (
           <Text style={styles.empty}>No workouts logged yet. Get after it!</Text>
         )}
 
-        {results.filter((r) => {
-          if (filter === 'fav') return favWodIds.has(r.wodId);
-          if (filter === 'pr') return r.isPR;
-          if (filter === 'rx') return r.rx;
-          if (filter === 'scaled') return !r.rx;
-          return true;
-        }).map((r) => (
+        {(() => {
+          const q = search.trim().toLowerCase();
+          const visible = results.filter((r) => {
+            if (filter === 'fav' && !favWodIds.has(r.wodId)) return false;
+            if (filter === 'pr' && !r.isPR) return false;
+            if (filter === 'rx' && !r.rx) return false;
+            if (filter === 'scaled' && r.rx) return false;
+            if (q && !getWodName(r).toLowerCase().includes(q)) return false;
+            return true;
+          });
+          if (results.length > 0 && visible.length === 0) {
+            return <Text style={styles.empty}>No workouts match your search.</Text>;
+          }
+          return visible.map((r) => (
           <TouchableOpacity
             key={r.id}
             style={styles.card}
@@ -298,7 +326,8 @@ export default function HistoryScreen() {
 
             {expandedId !== r.id && r.notes ? <Text style={styles.notes}>{r.notes}</Text> : null}
           </TouchableOpacity>
-        ))}
+          ));
+        })()}
       </ScrollView>
   );
 }
@@ -341,6 +370,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.xs,
     marginBottom: spacing.lg,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: spacing.md,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 4,
+    marginBottom: spacing.md,
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    padding: 0,
   },
   filterRow: {
     flexDirection: 'row',

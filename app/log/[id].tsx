@@ -476,7 +476,7 @@ export default function LogWorkoutScreen() {
         headerTitleStyle: { color: colors.text, fontWeight: 'bold', fontSize: 24 },
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()} style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
-            <Ionicons name="chevron-back" size={32} color={colors.primary} style={{ transform: [{ translateX: -4 }] }} />
+            <Ionicons name="chevron-back" size={32} color={colors.primary} style={{ lineHeight: 32, transform: [{ translateX: -4 }, { translateY: -2 }] }} />
           </TouchableOpacity>
         ),
       }} />
@@ -695,83 +695,79 @@ export default function LogWorkoutScreen() {
             </TouchableOpacity>
           </View>
         )}
-        <View style={styles.bottomBarButtons}>
-          {isTimerMode && (
-            <>
-              {!timerStarted && !isFinished && !leadingIn && (
-                <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={handleStart}>
-                  <Text style={styles.bottomBtnOutlineGreenText}>START</Text>
-                </TouchableOpacity>
-              )}
+        {/* Timer controls get their own row so labels never wrap. SAVE/SHARE
+            live on a second row below, keeping every button roomy on any width. */}
+        {isTimerMode && (
+          <View style={styles.bottomBarButtons}>
+            {!timerStarted && !isFinished && !leadingIn && (
+              <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={handleStart}>
+                <Text style={styles.bottomBtnOutlineGreenText} numberOfLines={1}>START</Text>
+              </TouchableOpacity>
+            )}
 
-              {timerStarted && !timerRunning && !isFinished && !timeUp && !leadingIn && (
-                <TouchableOpacity style={styles.bottomBtnSmallOutlineBlue} onPress={startTimer}>
-                  <Text style={styles.bottomBtnOutlineBlueText}>RESUME</Text>
-                </TouchableOpacity>
-              )}
+            {timerStarted && !timerRunning && !isFinished && !timeUp && !leadingIn && (
+              <TouchableOpacity style={styles.bottomBtnSmallOutlineBlue} onPress={startTimer}>
+                <Text style={styles.bottomBtnOutlineBlueText} numberOfLines={1}>RESUME</Text>
+              </TouchableOpacity>
+            )}
 
-              {timerRunning && (
-                <TouchableOpacity style={styles.bottomBtnOutlineYellow} onPress={pauseTimer}>
-                  <Text style={styles.bottomBtnOutlineYellowText}>PAUSE</Text>
-                </TouchableOpacity>
-              )}
+            {timerRunning && (
+              <TouchableOpacity style={styles.bottomBtnOutlineYellow} onPress={pauseTimer}>
+                <Text style={styles.bottomBtnOutlineYellowText} numberOfLines={1}>PAUSE</Text>
+              </TouchableOpacity>
+            )}
 
-              {timerRunning && hasRounds && !isFinished && (
-                <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={lapRound}>
-                  <Text style={styles.bottomBtnOutlineGreenText}>
-                    {currentRound >= totalRounds ? 'FINISH' : `R${currentRound} DONE`}
-                  </Text>
-                </TouchableOpacity>
-              )}
+            {timerRunning && hasRounds && !isFinished && (
+              <TouchableOpacity style={styles.bottomBtnOutlineGreen} onPress={lapRound}>
+                <Text style={styles.bottomBtnOutlineGreenText} numberOfLines={1}>
+                  {currentRound >= totalRounds ? 'FINISH' : `R${currentRound} DONE`}
+                </Text>
+              </TouchableOpacity>
+            )}
 
-              {timerRunning && isForTime && (
-                <TouchableOpacity
-                  style={[styles.bottomBtnOutlineBlue, lapFlash && styles.bottomBtnBlueFilled]}
-                  onPress={lapSplit}
-                  disabled={lapFlash}
-                >
-                  <Text style={[styles.bottomBtnOutlineBlueText, lapFlash && styles.bottomBtnFilledText]}>
-                    {lapFlash ? '✓' : 'SPLIT'}
-                  </Text>
-                </TouchableOpacity>
-              )}
+            {timerRunning && isForTime && (
+              <TouchableOpacity
+                style={[styles.bottomBtnOutlineBlue, lapFlash && styles.bottomBtnBlueFilled]}
+                onPress={lapSplit}
+                disabled={lapFlash}
+              >
+                <Text style={[styles.bottomBtnOutlineBlueText, lapFlash && styles.bottomBtnFilledText]} numberOfLines={1}>
+                  {lapFlash ? '✓' : 'SPLIT'}
+                </Text>
+              </TouchableOpacity>
+            )}
 
-              {timerRunning && (
-                <TouchableOpacity style={styles.bottomBtnOutlineRed} onPress={stopTimer}>
-                  <Text style={styles.bottomBtnOutlineRedText}>STOP</Text>
-                </TouchableOpacity>
-              )}
+            {timerRunning && (
+              <TouchableOpacity style={styles.bottomBtnOutlineRed} onPress={stopTimer}>
+                <Text style={styles.bottomBtnOutlineRedText} numberOfLines={1}>STOP</Text>
+              </TouchableOpacity>
+            )}
 
-              {timerStarted && !timerRunning && !leadingIn && (
-                <TouchableOpacity style={styles.bottomBtnSmallOutlineOrange} onPress={resetTimer}>
-                  <Text style={styles.bottomBtnOutlineOrangeText}>RESET</Text>
-                </TouchableOpacity>
-              )}
-            </>
-          )}
+            {timerStarted && !timerRunning && !leadingIn && (
+              <TouchableOpacity style={styles.bottomBtnSmallOutlineOrange} onPress={resetTimer}>
+                <Text style={styles.bottomBtnOutlineOrangeText} numberOfLines={1}>RESET</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
-          {showPostWorkout && (
+        {showPostWorkout && (
+          <View style={[styles.bottomBarButtons, isTimerMode && styles.bottomBarButtonsRow2]}>
             <TouchableOpacity
               style={[styles.bottomBtnPrimary, saving && { opacity: 0.5 }]}
               onPress={handleSave}
               disabled={saving}
             >
-              <Text style={styles.bottomBtnPrimaryText}>
+              <Text style={styles.bottomBtnPrimaryText} numberOfLines={1}>
                 {saving ? '✓' : 'SAVE'}
               </Text>
             </TouchableOpacity>
-          )}
 
-          {showPostWorkout && (
             <TouchableOpacity style={styles.bottomBtnShare} onPress={handleShare}>
               <Ionicons name="share-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
-          )}
-
-          {!isTimerMode && !showPostWorkout && (
-            <View />
-          )}
-        </View>
+          </View>
+        )}
       </View>
 
       {/* 3-2-1-GO lead-in: centered overlay so it's always on top, never scrolled off */}
@@ -910,6 +906,10 @@ const styles = StyleSheet.create({
   bottomBarButtons: {
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  // Second button row (SAVE/SHARE) sits below the timer-control row.
+  bottomBarButtonsRow2: {
+    marginTop: spacing.sm,
   },
   bottomBtnGreen: {
     flex: 1,
