@@ -59,7 +59,7 @@ export default function PaywallScreen() {
         title: '',
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()} style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
-            <Ionicons name="chevron-back" size={32} color={colors.primary} style={{ lineHeight: 32, transform: [{ translateX: -4 }, { translateY: -2 }] }} />
+            <Ionicons name="chevron-back" size={32} color={colors.primary} style={{ lineHeight: 32, transform: [{ translateX: 1 }, { translateY: -9 }] }} />
           </TouchableOpacity>
         ),
       }} />
