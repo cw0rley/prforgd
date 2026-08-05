@@ -2555,7 +2555,7 @@ export const heroWods: HeroWod[] = [
     type: 'rounds-for-time',
     totalRounds: 5,
     movements: ['Alternating Dumbbell Snatch', 'Squat Clean', 'Toes-to-Bar'],
-    workout: '5 Rounds For Time:\n9 Toes-to-Bars\n22 Alternating Dumbbell Snatches\n7 Squat Cleans (135/95 lb)',
+    workout: '5 Rounds For Time:\n9 Toes-to-Bars\n22 Alternating Dumbbell Snatches (55/35 lb)\n7 Squat Cleans (135/95 lb)',
     category: 'benchmark',
   },
   {
