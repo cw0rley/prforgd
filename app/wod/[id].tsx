@@ -95,7 +95,7 @@ export default function WodDetailScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel={fav ? 'Remove from favorites' : 'Add to favorites'}
           >
-            <Ionicons name={fav ? 'star' : 'star-outline'} size={28} color={fav ? colors.prGold : colors.textMuted} />
+            <Ionicons name={fav ? 'star' : 'star-outline'} size={28} color={fav ? colors.prGold : colors.textMuted} style={{ transform: [{ translateY: -8 }] }} />
           </TouchableOpacity>
         ),
       }} />
