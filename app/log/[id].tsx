@@ -120,6 +120,11 @@ export default function LogWorkoutScreen() {
   const { toast, show: showToast, hide: hideToast } = useToast();
   const [prModalVisible, setPrModalVisible] = useState(false);
   const [prWodName, setPrWodName] = useState('');
+  // Save-time note step. handleSave validates + stashes the computed inputs
+  // here, then opens the modal so the user always gets a chance to add a note
+  // before the result is written; confirmSave finishes the write.
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const pendingInputsRef = useRef<{ timeSeconds?: number; roundsNum?: number; repsNum?: number } | null>(null);
 
   // "More below" scroll cue — true when workout content extends under the
   // pinned bottom band and the user hasn't scrolled to the end yet.
@@ -356,6 +361,17 @@ export default function LogWorkoutScreen() {
       }
       timeSeconds = (parseInt(minutes || '0') * 60) + parseInt(seconds || '0');
     }
+
+    // Inputs are valid — stash them and let the user add a note before we write.
+    pendingInputsRef.current = { timeSeconds, roundsNum, repsNum };
+    setNoteModalVisible(true);
+  }
+
+  async function confirmSave() {
+    const pending = pendingInputsRef.current;
+    if (!pending) return;
+    setNoteModalVisible(false);
+    const { timeSeconds, roundsNum, repsNum } = pending;
 
     // Check subscription / free limit
     const session = await getSession();
@@ -604,25 +620,6 @@ export default function LogWorkoutScreen() {
           </View>
         )}
 
-        {/* Post-workout: notes */}
-        {showPostWorkout && (
-          <>
-            <View style={styles.section}>
-              <Text style={styles.label}>NOTES</Text>
-              <TextInput
-                style={[styles.input, styles.notesInput]}
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="How did it feel? Scaling used?"
-                placeholderTextColor={colors.textMuted}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-
-          </>
-        )}
       </ScrollView>
 
       {/* Fixed bottom bar with all action buttons */}
@@ -774,6 +771,49 @@ export default function LogWorkoutScreen() {
       <Modal visible={leadingIn} transparent animationType="fade" onRequestClose={() => {}}>
         <View style={styles.leadInOverlay} pointerEvents="none">
           <Text style={styles.leadInOverlayText}>{leadInLabel}</Text>
+        </View>
+      </Modal>
+
+      {/* Save-time note step: last stop before the result is written. */}
+      <Modal
+        visible={noteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNoteModalVisible(false)}
+      >
+        <View style={styles.noteModalOverlay}>
+          <View style={styles.noteModalCard}>
+            <Text style={styles.noteModalTitle}>Add a note</Text>
+            <Text style={styles.noteModalSubtitle}>How did it feel? Scaling used? (optional)</Text>
+            <TextInput
+              style={[styles.input, styles.notesInput]}
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Optional note"
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              autoFocus
+            />
+            <View style={styles.noteModalButtons}>
+              <TouchableOpacity
+                style={styles.noteModalCancel}
+                onPress={() => setNoteModalVisible(false)}
+              >
+                <Text style={styles.noteModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.bottomBtnPrimary, styles.noteModalSave, saving && { opacity: 0.5 }]}
+                onPress={confirmSave}
+                disabled={saving}
+              >
+                <Text style={styles.bottomBtnPrimaryText} numberOfLines={1}>
+                  {saving ? '✓' : 'SAVE'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
     </>
@@ -1139,6 +1179,53 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     textAlign: 'left',
     minHeight: 80,
+  },
+  noteModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    padding: spacing.lg,
+  },
+  noteModalCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  noteModalTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: colors.text,
+  },
+  noteModalSubtitle: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginTop: 4,
+    marginBottom: spacing.md,
+  },
+  noteModalButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  noteModalCancel: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    alignItems: 'center',
+  },
+  noteModalCancelText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  noteModalSave: {
+    flex: 1,
   },
 
   badgeRow: {
