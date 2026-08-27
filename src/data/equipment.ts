@@ -29,6 +29,7 @@ export const movementEquipment: Record<string, string[]> = {
   'Front Squat': ['barbell'],
   'Overhead Squat': ['barbell'],
   'Thruster': ['barbell'],
+  'Cluster': ['barbell'],
   'Power Clean': ['barbell'],
   'Squat Clean': ['barbell'],
   'Hang Clean': ['barbell'],

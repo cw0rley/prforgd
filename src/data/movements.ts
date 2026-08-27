@@ -14,6 +14,7 @@ export const movements: Movement[] = [
   { id: 'clean', name: 'Clean', videoUrl: 'https://www.youtube.com/watch?v=Ty14ogq_Vok', category: 'barbell' },
   { id: 'clean-and-jerk', name: 'Clean & Jerk', videoUrl: 'https://www.youtube.com/watch?v=PjY1rH4_MOA', category: 'barbell' },
   { id: 'clean-and-push-jerk', name: 'Clean and Push Jerk', videoUrl: 'https://www.youtube.com/watch?v=GqAEuwXQXRU', category: 'barbell' },
+  { id: 'cluster', name: 'Cluster', videoUrl: 'https://www.youtube.com/watch?v=XmoilY-pc-k', category: 'barbell' },
   { id: 'deadlift', name: 'Deadlift', videoUrl: 'https://www.youtube.com/watch?v=1ZXobu7JvvE', category: 'barbell' },
   { id: 'front-squat', name: 'Front Squat', videoUrl: 'https://www.youtube.com/watch?v=uYumuL_G_V0', category: 'barbell' },
   { id: 'good-morning', name: 'Good Morning', videoUrl: 'https://www.youtube.com/watch?v=YA-h3n9L4YU', category: 'barbell' },
