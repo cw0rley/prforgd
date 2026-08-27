@@ -8,6 +8,7 @@ import {
   ScrollView,
   Platform,
   Modal,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Toast, useToast } from '../../src/components/Toast';
 import { PRModal } from '../../src/components/PRModal';
@@ -781,7 +782,10 @@ export default function LogWorkoutScreen() {
         animationType="fade"
         onRequestClose={() => setNoteModalVisible(false)}
       >
-        <View style={styles.noteModalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.noteModalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.noteModalCard}>
             <Text style={styles.noteModalTitle}>Add a note</Text>
             <Text style={styles.noteModalSubtitle}>How did it feel? Scaling used? (optional)</Text>
@@ -814,7 +818,7 @@ export default function LogWorkoutScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );
