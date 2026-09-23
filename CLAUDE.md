@@ -51,7 +51,7 @@ docs/           user manual, store listing, supabase migration notes
 - Bundle ID: `com.prforgd.app` (iOS and Android)
 - App Store Connect: `6774586516`, Apple Team `N27NV97893`
 - Apple ID for submissions: `prcunningham@gmail.com`
-- Current app version: **1.0.6**, iOS build 29
+- Current app version: **1.0.7**, iOS build 31, Android versionCode 18
 
 ## Commands
 
@@ -70,7 +70,30 @@ npm test           # jest --forceExit
 3. `eas build --profile production`
 4. `eas submit --profile production`
 5. Write release notes into `cut-paste\whats-new-<version>.txt`
-6. Web deploys via Vercel
+6. Deploy web separately — see below. Pushing to `main` does **not** ship the web app.
+
+### Web deploy
+
+Vercel serves the **contents of `dist\`**, uploaded by the CLI. It does not build
+from source, and there is deliberately no `build` script in `package.json`.
+
+```bash
+npx expo export --platform web
+node scripts/post-export.js
+cd dist && npx vercel --prod
+```
+
+`post-export.js` is not optional. It flattens the vector-icon fonts out of their
+`node_modules` path (Vercel refuses to serve those) and injects the PWA tags.
+Skip it and the tab bar icons vanish on web.
+
+`dist\vercel.json` carries the SPA rewrites and is maintained separately from the
+repo-root `vercel.json` — keep the `rewrites` blocks in sync.
+
+**Git auto-deploy is disabled on purpose** (`git.deploymentEnabled: false` in the
+root `vercel.json`). A Git-sourced build has no build command and would publish
+the repo root, which has no `index.html` — that took prforgd.com down for two
+days in Sept 2026 until the deploy was rolled back. Deploy web from `dist\` only.
 
 ## Database
 

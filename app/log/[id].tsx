@@ -689,7 +689,7 @@ export default function LogWorkoutScreen() {
               <Text style={[styles.rxBtnText, rx && styles.rxBtnTextRx]} numberOfLines={1}>
                 {rx ? 'RX' : 'SCALED'}
               </Text>
-              <Text style={styles.rxBtnSizer}>SCALED</Text>
+              <Text style={[styles.rxBtnText, styles.rxBtnSizer]} numberOfLines={1}>SCALED</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1312,5 +1312,12 @@ const styles = StyleSheet.create({
   },
   rxBtnTextRx: {
     color: colors.background,
+  },
+  // Paired with rxBtnText on an invisible "SCALED" copy so the pill keeps the
+  // width of its longest label and doesn't jump when toggled to RX. Zero height
+  // keeps it out of the vertical layout — it only contributes its width.
+  rxBtnSizer: {
+    height: 0,
+    opacity: 0,
   },
 });

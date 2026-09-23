@@ -1,4 +1,8 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": false
+  },
   "rewrites": [
     { "source": "/((?!_expo|assets|api|manifest\\.json|icon-.*\\.png|favicon\\.ico).*)", "destination": "/index.html" }
   ]
