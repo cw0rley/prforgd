@@ -28,6 +28,7 @@ import {
 } from '../../src/storage/workoutStorage';
 import { formatResultText, shareResultText } from '../../src/lib/share';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../src/theme';
 import { canSaveWorkout } from '../../src/lib/subscription';
 import { getSession } from '../../src/lib/auth';
@@ -37,6 +38,7 @@ export default function LogWorkoutScreen() {
   useWakeLock();
   const { id, mode } = useLocalSearchParams<{ id: string; mode: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const isCustom = id === 'custom';
 
   const heroWod = !isCustom ? getWorkouts().find((w) => w.id === id) : null;
@@ -624,7 +626,11 @@ export default function LogWorkoutScreen() {
       </ScrollView>
 
       {/* Fixed bottom bar with all action buttons */}
-      <View style={styles.bottomBar}>
+      {/* Pinned to the true screen bottom (no tab bar here), so on Android
+          edge-to-edge the system nav bar paints over the START/SAVE row. Grow
+          only when the inset demands it, so devices without a nav bar keep the
+          tuned look. */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(40, insets.bottom + spacing.sm) }]}>
         {/* "More workout below" cue — floats just above the band's top edge,
             marking where content scrolls out of view. Hidden once scrolled to end. */}
         {moreBelow && (

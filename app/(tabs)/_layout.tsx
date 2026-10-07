@@ -11,6 +11,14 @@ export default function TabLayout() {
   const iconSize = isDesktop ? 26 : 22;
   const labelSize = isDesktop ? 14 : 10;
 
+  // Android runs edge-to-edge (app.json) and iOS has the home indicator, so the
+  // system bar is painted OVER the tab bar. React Navigation would normally add
+  // the bottom inset itself, but setting an explicit tabBarStyle height opts out
+  // of that — so the gesture pill / nav buttons landed on top of the labels.
+  // Grow the bar by the inset instead of guessing a fixed allowance.
+  // Web gets this via CSS env(safe-area-inset-bottom) in post-export.js.
+  const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom;
+
   return (
     <Tabs
       screenOptions={{
@@ -27,9 +35,9 @@ export default function TabLayout() {
           backgroundColor: colors.background,
           borderTopColor: colors.cardBorder,
           borderTopWidth: 1,
-          paddingBottom: isDesktop ? 12 : 8,
+          paddingBottom: (isDesktop ? 12 : 8) + bottomInset,
           paddingTop: isDesktop ? 10 : 6,
-          height: isDesktop ? 70 : 65,
+          height: (isDesktop ? 70 : 65) + bottomInset,
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,

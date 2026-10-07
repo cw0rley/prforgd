@@ -20,13 +20,17 @@ import {
   formatWorkoutDate,
   WorkoutResult,
   deleteResult,
+  setResultPublic,
 } from '../../src/storage/workoutStorage';
 import { isFavorite, toggleFavorite } from '../../src/storage/favoritesStorage';
+import { getProfile } from '../../src/storage/profileStorage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../src/theme';
 
 export default function WodDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const wod = getWorkouts().find((w) => w.id === id);
   const [results, setResults] = useState<WorkoutResult[]>([]);
   const [pr, setPr] = useState<WorkoutResult | null>(null);
@@ -52,6 +56,32 @@ export default function WodDetailScreen() {
 
   async function handleToggleFav() {
     setFav(await toggleFavorite(id!));
+  }
+
+  // Mirrors the BOARD toggle on the Log tab (app/(tabs)/history.tsx). This is
+  // the screen people actually look at when they want to post a result — it is
+  // the WOD whose leaderboard they'd be joining, with VIEW LEADERBOARD right
+  // there — so the toggle belongs here too.
+  async function handleToggleLeaderboard(r: WorkoutResult) {
+    // Removing is always allowed.
+    if (r.isPublic) {
+      await setResultPublic(r.id, false);
+      loadData();
+      return;
+    }
+    // Submitting requires a public athlete profile (username) for the entry.
+    const profile = await getProfile();
+    if (!profile) {
+      const msg = 'Set up your athlete profile (username) on the Me tab before submitting to the leaderboard.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Profile needed', msg);
+      return;
+    }
+    await setResultPublic(r.id, true);
+    loadData();
+    const done = 'Submitted to the leaderboard!';
+    if (Platform.OS === 'web') window.alert(done);
+    else Alert.alert('Done', done);
   }
 
   async function handleDelete(resultId: string) {
@@ -193,12 +223,35 @@ export default function WodDetailScreen() {
                 {r.notes ? (
                   <Text style={styles.historyNotes}>{r.notes}</Text>
                 ) : null}
+                {/* Rx only — the leaderboard view itself filters on rx = true. */}
+                {r.rx && (
+                  <TouchableOpacity
+                    style={[styles.boardToggle, r.isPublic && styles.boardToggleOn]}
+                    onPress={() => handleToggleLeaderboard(r)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={r.isPublic ? 'trophy' : 'trophy-outline'}
+                      size={14}
+                      color={r.isPublic ? colors.background : colors.prGold}
+                    />
+                    <Text
+                      style={r.isPublic ? styles.boardToggleTextOn : styles.boardToggleText}
+                      numberOfLines={1}
+                    >
+                      {r.isPublic ? 'ON LEADERBOARD' : 'ADD TO LEADERBOARD'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </TouchableOpacity>
             ))}
           </View>
         )}
       </ScrollView>
-      <View style={styles.bottomBar}>
+      {/* Pinned to the true screen bottom (no tab bar here), so on Android
+          edge-to-edge the system nav bar paints over it. Grow only when the
+          inset demands it, so devices without a nav bar keep the tuned look. */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(spacing.lg, insets.bottom + spacing.sm) }]}>
         <TouchableOpacity
           style={styles.startButton}
           onPress={() => router.push(`/log/${wod.id}?mode=timer`)}
@@ -490,6 +543,38 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 4,
     overflow: 'hidden',
+  },
+  // Full-width rather than squeezed in beside the Rx/PR badges, so the label
+  // can stay explicit ("ADD TO LEADERBOARD", not "BOARD") without wrapping on
+  // a narrow phone. Discoverability is the whole point of putting it here.
+  boardToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingVertical: 9,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 6,
+    borderWidth: 1,
+    backgroundColor: colors.card,
+    borderColor: colors.prGold,
+  },
+  boardToggleOn: {
+    backgroundColor: colors.prGold,
+    borderColor: colors.prGold,
+  },
+  boardToggleText: {
+    color: colors.prGold,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  boardToggleTextOn: {
+    color: colors.background,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   roundSplits: {
     flexDirection: 'row',
