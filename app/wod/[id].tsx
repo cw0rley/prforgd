@@ -31,6 +31,9 @@ export default function WodDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // Only Android edge-to-edge paints the system bar over app content without
+  // reserving room. iOS handles the home indicator itself.
+  const androidNavInset = Platform.OS === 'android' ? insets.bottom : 0;
   const wod = getWorkouts().find((w) => w.id === id);
   const [results, setResults] = useState<WorkoutResult[]>([]);
   const [pr, setPr] = useState<WorkoutResult | null>(null);
@@ -248,10 +251,11 @@ export default function WodDetailScreen() {
           </View>
         )}
       </ScrollView>
-      {/* Pinned to the true screen bottom (no tab bar here), so on Android
-          edge-to-edge the system nav bar paints over it. Grow only when the
-          inset demands it, so devices without a nav bar keep the tuned look. */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(spacing.lg, insets.bottom + spacing.sm) }]}>
+      {/* Android only — see app/(tabs)/_layout.tsx for why iOS is excluded.
+          Pinned to the true screen bottom (no tab bar here), so under Android
+          edge-to-edge the system nav bar paints over it. iOS and gesture-nav
+          devices keep the tuned spacing.lg. */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(spacing.lg, androidNavInset + spacing.sm) }]}>
         <TouchableOpacity
           style={styles.startButton}
           onPress={() => router.push(`/log/${wod.id}?mode=timer`)}

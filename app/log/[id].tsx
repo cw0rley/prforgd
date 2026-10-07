@@ -39,6 +39,9 @@ export default function LogWorkoutScreen() {
   const { id, mode } = useLocalSearchParams<{ id: string; mode: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // Only Android edge-to-edge paints the system bar over app content without
+  // reserving room. iOS handles the home indicator itself.
+  const androidNavInset = Platform.OS === 'android' ? insets.bottom : 0;
   const isCustom = id === 'custom';
 
   const heroWod = !isCustom ? getWorkouts().find((w) => w.id === id) : null;
@@ -626,11 +629,12 @@ export default function LogWorkoutScreen() {
       </ScrollView>
 
       {/* Fixed bottom bar with all action buttons */}
-      {/* Pinned to the true screen bottom (no tab bar here), so on Android
+      {/* Android only — see app/(tabs)/_layout.tsx for why iOS is excluded.
+          Pinned to the true screen bottom (no tab bar here), so under Android
           edge-to-edge the system nav bar paints over the START/SAVE row. Grow
-          only when the inset demands it, so devices without a nav bar keep the
-          tuned look. */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(40, insets.bottom + spacing.sm) }]}>
+          only when the nav bar demands it; iOS and gesture-nav devices keep
+          the tuned 40px. */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(40, androidNavInset + spacing.sm) }]}>
         {/* "More workout below" cue — floats just above the band's top edge,
             marking where content scrolls out of view. Hidden once scrolled to end. */}
         {moreBelow && (
