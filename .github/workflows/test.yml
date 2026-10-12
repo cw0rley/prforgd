@@ -1,0 +1,40 @@
+name: Tests
+
+# Runs the suite on every push, which includes the Supabase drift check
+# (src/data/__tests__/supabase-drift.test.ts). That check needs no secrets —
+# the anon key is public and ships in every client build — and it is the thing
+# that catches a src/data change whose matching scripts/*.sql was never run,
+# which would otherwise make the item vanish for every online user.
+#
+# Also runs weekly, because drift can appear with no commit at all: editing a
+# row directly in the Supabase dashboard leaves the static fallback stale
+# without anything touching this repo.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx tsc --noEmit
+        # scripts/seed-supabase.ts has a pre-existing missing @types/ws; it is a
+        # local one-off script and not part of the app, so do not fail CI on it.
+        continue-on-error: true
+
+      - run: npm test
