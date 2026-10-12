@@ -33,8 +33,5 @@ jobs:
       - run: npm ci
 
       - run: npx tsc --noEmit
-        # scripts/seed-supabase.ts has a pre-existing missing @types/ws; it is a
-        # local one-off script and not part of the app, so do not fail CI on it.
-        continue-on-error: true
 
       - run: npm test
