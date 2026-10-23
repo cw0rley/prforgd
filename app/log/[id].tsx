@@ -9,6 +9,7 @@ import {
   Platform,
   Modal,
   KeyboardAvoidingView,
+  useWindowDimensions,
 } from 'react-native';
 import { Toast, useToast } from '../../src/components/Toast';
 import { PRModal } from '../../src/components/PRModal';
@@ -38,6 +39,7 @@ export default function LogWorkoutScreen() {
   useWakeLock();
   const { id, mode } = useLocalSearchParams<{ id: string; mode: string }>();
   const router = useRouter();
+  const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   // Only Android edge-to-edge paints the system bar over app content without
   // reserving room. iOS handles the home indicator itself.
@@ -796,20 +798,22 @@ export default function LogWorkoutScreen() {
           style={styles.noteModalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View style={styles.noteModalCard}>
-            <Text style={styles.noteModalTitle}>Add a note</Text>
-            <Text style={styles.noteModalSubtitle}>How did it feel? Scaling used? (optional)</Text>
-            <TextInput
-              style={[styles.input, styles.notesInput]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Optional note"
-              placeholderTextColor={colors.textMuted}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-              autoFocus
-            />
+          <View style={[styles.noteModalCard, { maxHeight: height - spacing.lg * 2 }]}>
+            <ScrollView style={styles.noteModalBody} showsVerticalScrollIndicator={false}>
+              <Text style={styles.noteModalTitle}>Add a note</Text>
+              <Text style={styles.noteModalSubtitle}>How did it feel? Scaling used? (optional)</Text>
+              <TextInput
+                style={[styles.input, styles.notesInput]}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Optional note"
+                placeholderTextColor={colors.textMuted}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                autoFocus
+              />
+            </ScrollView>
             <View style={styles.noteModalButtons}>
               <TouchableOpacity
                 style={styles.noteModalCancel}
@@ -1217,6 +1221,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 4,
     marginBottom: spacing.md,
+  },
+  // flexShrink defaults to 0 in React Native, so without this the body refuses
+  // to give up height and maxHeight on the card has no effect. Matters most
+  // here: autoFocus raises the keyboard, which can leave the buttons offscreen.
+  noteModalBody: {
+    flexShrink: 1,
   },
   noteModalButtons: {
     flexDirection: 'row',

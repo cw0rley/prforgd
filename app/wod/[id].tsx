@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
   Linking,
+  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,10 +27,12 @@ import { isFavorite, toggleFavorite } from '../../src/storage/favoritesStorage';
 import { getProfile } from '../../src/storage/profileStorage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../src/theme';
+import { videoModalSize } from '../../src/lib/videoModalSize';
 
 export default function WodDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   // Only Android edge-to-edge paints the system bar over app content without
   // reserving room. iOS handles the home indicator itself.
@@ -39,6 +42,8 @@ export default function WodDetailScreen() {
   const [pr, setPr] = useState<WorkoutResult | null>(null);
   const [fav, setFav] = useState(false);
   const [activeVideo, setActiveVideo] = useState<{ name: string; videoId: string } | null>(null);
+
+  const { height: videoHeight } = videoModalSize(width, height);
 
   useFocusEffect(
     useCallback(() => {
@@ -278,33 +283,35 @@ export default function WodDetailScreen() {
         onRequestClose={() => setActiveVideo(null)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { maxHeight: height - spacing.md * 2 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{activeVideo?.name}</Text>
               <TouchableOpacity onPress={() => setActiveVideo(null)}>
                 <Text style={styles.modalClose}>&#10005;</Text>
               </TouchableOpacity>
             </View>
-            {activeVideo && Platform.OS === 'web' && (
-              <iframe
-                src={`https://www.youtube.com/embed/${activeVideo.videoId}?autoplay=1&rel=0`}
-                style={{ width: '100%', height: 300, border: 'none', borderRadius: 8 } as any}
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-              />
-            )}
-            {activeVideo && Platform.OS !== 'web' && (
-              <TouchableOpacity
-                style={{ backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginVertical: spacing.md }}
-                onPress={() => {
-                  const videoId = activeVideo.videoId;
-                  setActiveVideo(null);
-                  Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
-                }}
-              >
-                <Text style={{ color: colors.background, fontSize: 14, fontWeight: '800', letterSpacing: 2 }}>WATCH ON YOUTUBE</Text>
-              </TouchableOpacity>
-            )}
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              {activeVideo && Platform.OS === 'web' && (
+                <iframe
+                  src={`https://www.youtube.com/embed/${activeVideo.videoId}?autoplay=1&rel=0`}
+                  style={{ width: '100%', height: videoHeight, border: 'none', borderRadius: 8 } as any}
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                />
+              )}
+              {activeVideo && Platform.OS !== 'web' && (
+                <TouchableOpacity
+                  style={{ backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginVertical: spacing.md }}
+                  onPress={() => {
+                    const videoId = activeVideo.videoId;
+                    setActiveVideo(null);
+                    Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
+                  }}
+                >
+                  <Text style={{ color: colors.background, fontSize: 14, fontWeight: '800', letterSpacing: 2 }}>WATCH ON YOUTUBE</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
             <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setActiveVideo(null)}>
               <Text style={styles.modalDoneBtnText}>CLOSE</Text>
             </TouchableOpacity>
@@ -637,6 +644,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: colors.textMuted,
     paddingLeft: spacing.md,
+  },
+  // flexShrink defaults to 0 in React Native, so without this the body refuses
+  // to give up height and maxHeight on the card has no effect.
+  modalBody: {
+    flexShrink: 1,
   },
   modalDoneBtn: {
     backgroundColor: colors.primary,

@@ -9,11 +9,13 @@ import {
   Modal,
   Platform,
   Linking,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Movement } from '../../src/data/movements';
 import { getMovements } from '../../src/data/workoutData';
 import { colors, spacing } from '../../src/theme';
+import { videoModalSize } from '../../src/lib/videoModalSize';
 
 const categoryLabels: Record<string, string> = {
   barbell: 'Barbell',
@@ -31,6 +33,7 @@ function getYouTubeId(url: string): string | null {
 
 export default function MovementsScreen() {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeVideo, setActiveVideo] = useState<{ name: string; videoId: string } | null>(null);
@@ -52,6 +55,8 @@ export default function MovementsScreen() {
   }
 
   const categories = Object.keys(categoryLabels);
+
+  const { height: videoHeight } = videoModalSize(width, height);
 
   return (
     <>
@@ -118,33 +123,35 @@ export default function MovementsScreen() {
         onRequestClose={() => setActiveVideo(null)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { maxHeight: height - spacing.md * 2 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{activeVideo?.name}</Text>
               <TouchableOpacity onPress={() => setActiveVideo(null)}>
                 <Text style={styles.modalClose}>&#10005;</Text>
               </TouchableOpacity>
             </View>
-            {activeVideo && Platform.OS === 'web' && (
-              <iframe
-                src={`https://www.youtube.com/embed/${activeVideo.videoId}?autoplay=1&rel=0`}
-                style={{ width: '100%', height: 300, border: 'none', borderRadius: 8 } as any}
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-              />
-            )}
-            {activeVideo && Platform.OS !== 'web' && (
-              <TouchableOpacity
-                style={{ backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginVertical: spacing.md }}
-                onPress={() => {
-                  const videoId = activeVideo.videoId;
-                  setActiveVideo(null);
-                  Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
-                }}
-              >
-                <Text style={{ color: colors.background, fontSize: 14, fontWeight: '800', letterSpacing: 2 }}>WATCH ON YOUTUBE</Text>
-              </TouchableOpacity>
-            )}
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              {activeVideo && Platform.OS === 'web' && (
+                <iframe
+                  src={`https://www.youtube.com/embed/${activeVideo.videoId}?autoplay=1&rel=0`}
+                  style={{ width: '100%', height: videoHeight, border: 'none', borderRadius: 8 } as any}
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                />
+              )}
+              {activeVideo && Platform.OS !== 'web' && (
+                <TouchableOpacity
+                  style={{ backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginVertical: spacing.md }}
+                  onPress={() => {
+                    const videoId = activeVideo.videoId;
+                    setActiveVideo(null);
+                    Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
+                  }}
+                >
+                  <Text style={{ color: colors.background, fontSize: 14, fontWeight: '800', letterSpacing: 2 }}>WATCH ON YOUTUBE</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
             <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setActiveVideo(null)}>
               <Text style={styles.modalDoneBtnText}>CLOSE</Text>
             </TouchableOpacity>
@@ -274,6 +281,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: colors.textMuted,
     paddingLeft: spacing.md,
+  },
+  // flexShrink defaults to 0 in React Native, so without this the body refuses
+  // to give up height and maxHeight on the card has no effect.
+  modalBody: {
+    flexShrink: 1,
   },
   mobileVideoHint: {
     color: colors.textSecondary,

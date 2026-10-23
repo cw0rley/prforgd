@@ -51,7 +51,7 @@ docs/           user manual, store listing, supabase migration notes
 - Bundle ID: `com.prforgd.app` (iOS and Android)
 - App Store Connect: `6774586516`, Apple Team `N27NV97893`
 - Apple ID for submissions: `prcunningham@gmail.com`
-- Current app version: **1.0.7**, iOS build 31, Android versionCode 18
+- Current app version: **1.0.7**, iOS build 33, Android versionCode 19
 
 ## Commands
 
